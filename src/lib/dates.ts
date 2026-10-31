@@ -86,6 +86,22 @@ export function firstBillingDateOnOrAfter(anchor: string, frequency: BillingFreq
   return addPeriods(anchor, frequency, periodsUntil(anchor, frequency, day));
 }
 
+/**
+ * Where billing continues after a pause: the period the day falls in, so pausing across a billing
+ * date can't skip it. Whole periods spent paused aren't billed, and a period already billed isn't billed again.
+ */
+export function resumeBillingDate(
+  anchor: string,
+  frequency: BillingFrequency,
+  current: string | null,
+  day: string,
+): string {
+  const count = periodsUntil(anchor, frequency, day);
+  const onOrAfter = addPeriods(anchor, frequency, count);
+  const periodStart = onOrAfter > day && count > 0 ? addPeriods(anchor, frequency, count - 1) : onOrAfter;
+  return current && current > periodStart ? current : periodStart;
+}
+
 /** The billing date straight after `current`, for a subscription that started on `anchor`. */
 export function nextBillingDateAfter(anchor: string, frequency: BillingFrequency, current: string): string {
   return firstBillingDateOnOrAfter(anchor, frequency, addDays(current, 1));

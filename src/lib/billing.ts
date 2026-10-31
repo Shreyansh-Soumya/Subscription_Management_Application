@@ -38,7 +38,7 @@ async function loadLines(db: Db, subscriptionId: string): Promise<InvoiceLineInp
     .select()
     .from(subscriptionLines)
     .where(eq(subscriptionLines.subscriptionId, subscriptionId))
-    .orderBy(asc(subscriptionLines.id));
+    .orderBy(asc(subscriptionLines.productId), asc(subscriptionLines.id)); // the portal's preview uses this order too
   if (lines.length === 0) return [];
 
   const taxes = await db

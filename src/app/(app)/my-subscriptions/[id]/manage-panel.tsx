@@ -80,6 +80,8 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
 
   const confirmChange = async () => {
     if (!change || !preview) return;
+    clearTimeout(timer.current);
+    latest.current += 1; // so a preview still on its way can't overwrite the saved result
     setIsSaving(true);
     setError("");
     try {
@@ -99,7 +101,7 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
     const question =
       action === "pause"
         ? "Pause this subscription? Anything already due is invoiced first, and no new invoices are created while it's paused."
-        : "Resume this subscription? Billing restarts from the next billing date, and the paused time isn't charged.";
+        : "Resume this subscription? You're invoiced for the billing period you resume in. Whole periods spent paused aren't charged.";
     if (!window.confirm(question)) return;
     setIsSaving(true);
     setError("");
@@ -123,6 +125,7 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
   return (
     <div className="mt-8 grid items-start gap-10 lg:grid-cols-[1fr_minmax(0,440px)]">
       <div className="grid min-w-0 gap-8">
+        <fieldset disabled={isSaving} className="contents">
         <section aria-labelledby="seats-title">
           <h2 id="seats-title" className="text-lg font-semibold">Seats</h2>
           {detail.minQuantity > 1 && <p className="mt-0.5 text-sm text-ink-soft">This plan needs at least {detail.minQuantity} seats.</p>}
@@ -136,7 +139,7 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
                     <span className="num block text-[13px] text-ink-soft">{formatMoney(line.unitPricePaise)} each</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Button type="button" variant="outline" size="icon" aria-label={`Remove one from ${line.description}`} disabled={quantity <= 1} onClick={() => setQuantity(line.lineId, quantity - 1)}><Minus aria-hidden /></Button>
+                    <Button type="button" variant="outline" size="icon" aria-label={`Remove one from ${line.description}`} disabled={quantity <= (seatLines.length === 1 ? Math.max(1, detail.minQuantity) : 1)} onClick={() => setQuantity(line.lineId, quantity - 1)}><Minus aria-hidden /></Button>
                     <Input
                       id={`qty-${line.lineId}`}
                       type="number"
@@ -181,6 +184,8 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
           </section>
         )}
 
+        </fieldset>
+
         <section aria-labelledby="pause-title">
           <h2 id="pause-title" className="text-lg font-semibold">{isPaused ? "Paused" : "Pause"}</h2>
           {isPaused ? (
@@ -190,7 +195,7 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
             </>
           ) : detail.canPause ? (
             <>
-              <p className="mt-0.5 max-w-lg text-sm text-ink-soft">Stop new invoices until you resume. You aren&apos;t charged for the time it&apos;s paused.</p>
+              <p className="mt-0.5 max-w-lg text-sm text-ink-soft">Stop new invoices until you resume. Whole billing periods spent paused aren&apos;t charged.</p>
               <Button className="mt-3" variant="outline" disabled={isSaving} onClick={() => setPaused("pause")}>Pause subscription</Button>
             </>
           ) : (
@@ -203,7 +208,7 @@ export function ManagePanel({ detail }: { detail: PortalSubscriptionDetail }) {
         <InvoiceSlip
           computation={preview?.next ?? detail.nextInvoice!.computation}
           billingDate={billingDate}
-          title={change ? "Your new invoice" : "Next invoice"}
+          title={preview ? "Your new invoice" : "Next invoice"}
           previousTotalPaise={preview?.current.totalPaise}
           isUpdating={isPreviewing}
         />

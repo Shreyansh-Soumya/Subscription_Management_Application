@@ -16,3 +16,9 @@ const FREQUENCY_WORDS: Record<string, string> = { daily: "day", weekly: "week", 
 export function frequencyWord(frequency: string): string {
   return FREQUENCY_WORDS[frequency] ?? frequency;
 }
+
+const PAYMENT_METHODS: Record<string, string> = { bank_transfer: "Bank transfer", upi: "UPI", cash: "Cash", card: "Card", cheque: "Cheque" };
+
+export function paymentMethodLabel(method: string): string {
+  return PAYMENT_METHODS[method] ?? method;
+}

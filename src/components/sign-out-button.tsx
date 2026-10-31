@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 export function useSignOut() {
-  const router = useRouter();
   const [failed, setFailed] = useState(false);
 
   const signOut = async () => {
@@ -15,8 +13,9 @@ export function useSignOut() {
       setFailed(true);
       return;
     }
-    router.replace("/login");
-    router.refresh();
+    // A full page load, so the signed-out person's pages don't stay in the browser's memory for the next person.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign("/login");
   };
 
   return { signOut, failed };

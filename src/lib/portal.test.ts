@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
 import { runBilling } from "./billing";
 import { appToday } from "./clock";
-import { addDays } from "./dates";
+import { addDays, addPeriods } from "./dates";
 import {
   applyPortalChange,
   getPortalInvoice,
@@ -167,6 +167,43 @@ describe("previewPortalChange", () => {
   });
 });
 
+describe("limits on a change", () => {
+  it("refuses a change whose invoice would be too large to save", async () => {
+    const own = await addSubscription(mine);
+    await expect(previewPortalChange(db, mine, own.id, { quantities: { [own.lineId]: 30_000 } })).rejects.toThrow("too large");
+    await expect(applyPortalChange(db, { customerId: mine, subscriptionId: own.id, change: { quantities: { [own.lineId]: 30_000 } }, expectedTotalPaise: 3_000_000_000, actorId: "u1" })).rejects.toThrow("too large");
+    expect((await lineRows(own.id))[0].quantity).toBe(3);
+  });
+
+  it("refuses to remove the last line", async () => {
+    const own = await addSubscription(mine, {}, 3);
+    await db.delete(subscriptionLines).where(eq(subscriptionLines.id, own.lineId));
+    const [line] = await db.insert(subscriptionLines).values({ subscriptionId: own.id, productId: addon, description: "Support", quantity: 1, unitPricePaise: 50000 }).returning();
+    await expect(previewPortalChange(db, mine, own.id, { removeLines: [line.id] })).rejects.toThrow("at least one");
+  });
+
+  it("doesn't reveal discounts that didn't apply", async () => {
+    const own = await addSubscription(mine);
+    const [rule] = await db.insert(discounts).values({ name: "Secret promo", kind: "percent", value: 1000, scope: "product", minQuantity: 999, startsOn: addDays(today, -1), endsOn: addDays(today, 60) }).returning();
+    await db.insert(discountProducts).values({ discountId: rule.id, productId: seatProduct });
+    const preview = await previewPortalChange(db, mine, own.id, {});
+    const detail = await getPortalSubscription(db, mine, own.id);
+    expect(JSON.stringify([preview, detail])).not.toContain("Secret promo");
+  });
+
+  it("totals the same whichever order the lines were added, matching billing to the paisa", async () => {
+    const own = await addSubscription(mine, { startDate: today, nextBillingDate: today }, 1);
+    await db.update(subscriptionLines).set({ unitPricePaise: 50000 }).where(eq(subscriptionLines.id, own.lineId));
+    const [rule] = await db.insert(discounts).values({ name: "Odd", kind: "fixed", value: 3, scope: "subscription", startsOn: addDays(today, -1), endsOn: addDays(today, 60) }).returning();
+    await db.insert(schema.subscriptionDiscounts).values({ subscriptionId: own.id, discountId: rule.id });
+    const preview = await previewPortalChange(db, mine, own.id, { addAddons: [addon] });
+    await applyPortalChange(db, { customerId: mine, subscriptionId: own.id, change: { addAddons: [addon] }, expectedTotalPaise: preview.next.totalPaise, actorId: "u1" });
+    await runBilling(db, { today });
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.subscriptionId, own.id));
+    expect(invoice.totalPaise).toBe(preview.next.totalPaise);
+  });
+});
+
 describe("applyPortalChange", () => {
   const apply = (subscriptionId: string, change: object, expectedTotalPaise: number) =>
     applyPortalChange(db, { customerId: mine, subscriptionId, change, expectedTotalPaise, actorId: "u1" });
@@ -232,10 +269,36 @@ describe("pausing and resuming", () => {
     expect((await getPortalSubscription(db, mine, own.id))?.canPause).toBe(false);
   });
 
-  it("previews a paused subscription from the date it would resume", async () => {
-    const own = await addSubscription(mine, { status: "paused", startDate: addDays(today, -60), nextBillingDate: addDays(today, -30) });
+  it("previews a paused subscription from the billing period it would resume in", async () => {
+    const start = addDays(today, -60);
+    const own = await addSubscription(mine, { status: "paused", startDate: start, nextBillingDate: addDays(start, 1) });
     const detail = await getPortalSubscription(db, mine, own.id);
-    expect(detail!.nextInvoice!.billingDate >= today).toBe(true);
+    await resumePortalSubscription(db, input(own.id));
+    const [row] = await db.select().from(subscriptions).where(eq(subscriptions.id, own.id));
+    expect(detail!.nextInvoice!.billingDate).toBe(row.nextBillingDate);
+  });
+
+  it("can't skip an invoice by pausing across the billing date", async () => {
+    const start = addDays(today, -40);
+    const due = addPeriods(start, "monthly", 1);
+    const own = await addSubscription(mine, { startDate: start, nextBillingDate: addDays(today, 1) });
+    await db.update(subscriptions).set({ status: "paused", nextBillingDate: due }).where(eq(subscriptions.id, own.id));
+    await resumePortalSubscription(db, input(own.id));
+    const result = await runBilling(db, { today });
+    expect(result.created).toBe(1);
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.subscriptionId, own.id));
+    expect(invoice.periodStart).toBe(due);
+  });
+
+  it("only resumes a paused subscription, so a customer can't activate a confirmed one", async () => {
+    const own = await addSubscription(mine, { status: "confirmed", nextBillingDate: null });
+    await expect(resumePortalSubscription(db, input(own.id))).rejects.toThrow("isn't paused");
+    expect((await db.select().from(subscriptions).where(eq(subscriptions.id, own.id)))[0].status).toBe("confirmed");
+  });
+
+  it("only pauses an active subscription", async () => {
+    const own = await addSubscription(mine, { status: "paused" });
+    await expect(pausePortalSubscription(db, input(own.id))).rejects.toThrow("isn't active");
   });
 });
 

@@ -307,21 +307,17 @@ describe("billing dates across status changes", () => {
     expect((await reload(subscription.id)).nextBillingDate).toBe("2026-01-31");
   });
 
-  it("doesn't bill the paused months after resuming", async () => {
+  it("doesn't bill the paused months after resuming, but bills the period it resumes in", async () => {
     const subscription = await addSubscription({ status: "paused", startDate: "2020-01-15", nextBillingDate: "2020-02-15" });
     await transitionSubscription(db, { id: subscription.id, to: "active" });
-    const next = (await reload(subscription.id)).nextBillingDate;
+    const next = (await reload(subscription.id)).nextBillingDate!;
     const today = new Date().toISOString().slice(0, 10);
-    expect(next! >= addDaysBack(today)).toBe(true);
-    expect(next!.endsWith("-15")).toBe(true);
+    expect(next.endsWith("-15")).toBe(true);
+    expect(next <= today).toBe(true); // the period it resumes in, so it can't be skipped
+    expect(next > "2020-02-15").toBe(true); // the months spent paused aren't billed
   });
 });
 
-function addDaysBack(day: string) {
-  const moment = new Date(`${day}T00:00:00Z`);
-  moment.setUTCDate(moment.getUTCDate() - 1);
-  return moment.toISOString().slice(0, 10);
-}
 
 describe("runBilling when something goes wrong", () => {
   it("keeps billing the others when one subscription fails, and reports it", async () => {

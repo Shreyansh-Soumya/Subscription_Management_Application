@@ -32,8 +32,8 @@ export default async function MySubscriptionsPage() {
                   <span className="num block text-[13px] text-ink-soft">{row.number}</span>
                 </span>
                 <span className="text-[14px] text-ink-soft">
-                  <span className="num block text-ink">{formatMoney(row.amountPaise)} per {frequencyWord(row.frequency)}</span>
-                  {row.status === "active" && row.nextBillingDate ? `Next invoice ${formatDate(row.nextBillingDate)}` : null}
+                  <span className="num block text-ink">{formatMoney(row.amountPaise)} per {frequencyWord(row.frequency)}, before tax</span>
+                  {row.status === "active" && row.nextBillingDate && !(row.expiryDate && row.nextBillingDate >= row.expiryDate) ? `Next invoice ${formatDate(row.nextBillingDate)}` : null}
                 </span>
                 <span><Stamp tone={subscriptionTone(row.status)}>{row.status}</Stamp></span>
               </Link>

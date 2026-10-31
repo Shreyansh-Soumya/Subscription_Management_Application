@@ -17,7 +17,7 @@ import {
 import { loadDiscounts } from "./billing";
 import { appNow, appToday } from "./clock";
 import { computeInvoice, type InvoiceComputation, type InvoiceLineInput, type TaxInput } from "./compute-invoice";
-import { firstBillingDateOnOrAfter } from "./dates";
+import { resumeBillingDate } from "./dates";
 import { formatMoney } from "./money";
 import { transitionSubscription } from "./transition";
 
@@ -38,6 +38,7 @@ export type PortalChange = {
 };
 
 const MAX_QUANTITY = 100_000;
+const MAX_INVOICE_PAISE = 2_147_483_647;
 const VISIBLE_INVOICES = ["confirmed", "paid", "cancelled"] as const;
 const LIST_LIMIT = 200;
 
@@ -92,8 +93,7 @@ type Owned = NonNullable<Awaited<ReturnType<typeof findOwned>>>;
 function nextBillingDate({ subscription, plan }: Owned, today: string): string | null {
   let date = subscription.nextBillingDate;
   if (subscription.status === "paused") {
-    const resumeDate = firstBillingDateOnOrAfter(subscription.startDate, plan.frequency, today);
-    if (!date || date < resumeDate) date = resumeDate;
+    date = resumeBillingDate(subscription.startDate, plan.frequency, date, today);
   } else if (subscription.status === "quotation" || subscription.status === "confirmed") {
     date ??= subscription.startDate;
   } else if (subscription.status === "closed") {
@@ -103,8 +103,20 @@ function nextBillingDate({ subscription, plan }: Owned, today: string): string |
   return date;
 }
 
+/**
+ * Uses the billing run's line order, so rounding lands on the same lines and totals match to the paisa.
+ * Discounts that didn't apply are left out, because customers shouldn't learn about them.
+ */
 async function compute(db: Db, subscriptionId: string, lines: InvoiceLineInput[], on: string): Promise<InvoiceComputation> {
-  return computeInvoice({ lines, discounts: await loadDiscounts(db, subscriptionId, lines), on });
+  const ordered = [...lines].sort((a, b) => a.productId.localeCompare(b.productId));
+  const computation = computeInvoice({ lines: ordered, discounts: await loadDiscounts(db, subscriptionId, ordered), on });
+  return { ...computation, skippedDiscounts: [] };
+}
+
+/** Invoice amounts are stored in 32-bit columns, so a larger total could never be billed. */
+function assertBillable(computation: InvoiceComputation): void {
+  const largest = Math.max(computation.subtotalPaise, computation.totalPaise, ...computation.lines.map((line) => Math.max(line.subtotalPaise, line.totalPaise)));
+  if (largest > MAX_INVOICE_PAISE) throw new PortalError("That invoice would be too large. Choose fewer seats.");
 }
 
 function assertChangeable(owned: Owned, billingDate: string | null): asserts billingDate is string {
@@ -179,6 +191,8 @@ async function applyToLines(db: Db, owned: Owned, lines: PortalLine[], change: P
     }
   }
 
+  if (next.length + additions.length === 0) throw new PortalError("A subscription needs at least one product.");
+
   return { next: [...next, ...additions], updates, removals: [...removals], additions, notes };
 }
 
@@ -197,11 +211,9 @@ export async function previewPortalChange(db: Db, customerId: string, subscripti
 
   const lines = await loadLines(db, subscriptionId);
   const { next } = await applyToLines(db, owned, lines, change);
-  return {
-    billingDate,
-    current: await compute(db, subscriptionId, lines, billingDate),
-    next: await compute(db, subscriptionId, next, billingDate),
-  };
+  const computed = await compute(db, subscriptionId, next, billingDate);
+  assertBillable(computed);
+  return { billingDate, current: await compute(db, subscriptionId, lines, billingDate), next: computed };
 }
 
 /**
@@ -225,6 +237,7 @@ export async function applyPortalChange(
     if (notes.length === 0) throw new PortalError("Change something first.");
 
     const computed = await compute(tx, subscriptionId, next, billingDate);
+    assertBillable(computed);
     if (computed.totalPaise !== expectedTotalPaise) {
       throw new PortalError(`The price has changed to ${formatMoney(computed.totalPaise)}. Check it and confirm again.`);
     }
@@ -262,12 +275,12 @@ export async function applyPortalChange(
 
 export async function pausePortalSubscription(db: Db, input: { customerId: string; subscriptionId: string; actorId: string }) {
   if (!(await findOwned(db, input.customerId, input.subscriptionId))) throw new PortalNotFoundError("Subscription not found.");
-  await transitionSubscription(db, { id: input.subscriptionId, to: "paused", actorId: input.actorId, note: "Paused by the customer" });
+  await transitionSubscription(db, { id: input.subscriptionId, to: "paused", expectedFrom: "active", actorId: input.actorId, note: "Paused by the customer" });
 }
 
 export async function resumePortalSubscription(db: Db, input: { customerId: string; subscriptionId: string; actorId: string }) {
   if (!(await findOwned(db, input.customerId, input.subscriptionId))) throw new PortalNotFoundError("Subscription not found.");
-  await transitionSubscription(db, { id: input.subscriptionId, to: "active", actorId: input.actorId, note: "Resumed by the customer" });
+  await transitionSubscription(db, { id: input.subscriptionId, to: "active", expectedFrom: "paused", actorId: input.actorId, note: "Resumed by the customer" });
 }
 
 export async function listPortalSubscriptions(db: Db, customerId: string) {

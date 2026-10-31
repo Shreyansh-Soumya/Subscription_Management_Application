@@ -3,7 +3,7 @@ import type { Db } from "@/db";
 import { events, invoices, plans, subscriptions } from "@/db/schema";
 import { billDueSubscription } from "./billing";
 import { appNow } from "./clock";
-import { firstBillingDateOnOrAfter, toBusinessDate } from "./dates";
+import { resumeBillingDate, toBusinessDate } from "./dates";
 import {
   checkInvoiceTransition,
   checkSubscriptionTransition,
@@ -22,7 +22,10 @@ type TransitionInput<Status> = {
 };
 
 /** The only way to change a subscription's status. Checks the rules and writes the timeline event. */
-export async function transitionSubscription(db: Db, input: TransitionInput<SubscriptionStatus>): Promise<void> {
+export async function transitionSubscription(
+  db: Db,
+  input: TransitionInput<SubscriptionStatus> & { expectedFrom?: SubscriptionStatus },
+): Promise<void> {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .select({ subscription: subscriptions, plan: plans })
@@ -34,6 +37,9 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
 
     const now = await appNow(tx);
     const from = row.subscription.status;
+    if (input.expectedFrom && from !== input.expectedFrom) {
+      throw new TransitionError(`This subscription isn't ${input.expectedFrom}.`);
+    }
     const today = toBusinessDate(now);
     const check = checkSubscriptionTransition(from, input.to, {
       plan: row.plan,
@@ -54,9 +60,8 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
     if (from === "confirmed" && input.to === "active") {
       nextBillingDate ??= row.subscription.startDate;
     } else if (from === "paused" && input.to === "active") {
-      // Resuming continues from the next billing date, so the paused months aren't billed.
-      const resumeDate = firstBillingDateOnOrAfter(row.subscription.startDate, row.plan.frequency, today);
-      if (!nextBillingDate || nextBillingDate < resumeDate) nextBillingDate = resumeDate;
+      // Whole periods spent paused aren't billed, but the period it resumes in is.
+      nextBillingDate = resumeBillingDate(row.subscription.startDate, row.plan.frequency, nextBillingDate, today);
     }
 
     await tx.update(subscriptions).set({ status: input.to, nextBillingDate }).where(eq(subscriptions.id, input.id));

@@ -74,7 +74,7 @@ export default async function PortalPage() {
                     <span className="num block text-[13px] text-ink-soft">{row.number}</span>
                   </span>
                   <span className="flex items-center gap-4">
-                    <span className="num text-[14px]">{formatMoney(row.amountPaise)} per {frequencyWord(row.frequency)}</span>
+                    <span className="num text-[14px]">{formatMoney(row.amountPaise)} per {frequencyWord(row.frequency)}, before tax</span>
                     <Stamp tone={subscriptionTone(row.status)}>{row.status}</Stamp>
                   </span>
                 </Link>

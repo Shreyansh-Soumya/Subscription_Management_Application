@@ -3,14 +3,12 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { invoiceStamp, Stamp } from "@/components/portal/stamp";
 import { db } from "@/db";
-import { formatDate } from "@/lib/format";
+import { formatDate, paymentMethodLabel } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { requirePageRole } from "@/lib/permissions";
 import { getPortalCustomerId, getPortalInvoice } from "@/lib/portal";
 
 export const instant = false;
-
-const METHODS: Record<string, string> = { bank_transfer: "Bank transfer", upi: "UPI", cash: "Cash", card: "Card", cheque: "Cheque" };
 
 function Row({ label, amount, tone, strong }: { label: string; amount: string; tone?: string; strong?: boolean }) {
   return (
@@ -84,7 +82,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <ul className="mt-2 border-t-[1.5px] border-ink">
             {invoice.payments.map((payment) => (
               <li key={payment.id} className="flex flex-wrap justify-between gap-x-4 border-b border-rule-strong py-3 text-[15px]">
-                <span>{formatDate(payment.paidOn)}, {METHODS[payment.method] ?? payment.method}</span>
+                <span>{formatDate(payment.paidOn)}, {paymentMethodLabel(payment.method)}</span>
                 <span className="num font-medium">{formatMoney(payment.amountPaise)}</span>
               </li>
             ))}
