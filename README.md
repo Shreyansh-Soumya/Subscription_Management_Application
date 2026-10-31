@@ -1,6 +1,6 @@
 # Brightloop
 
-One system to run plans, subscriptions and recurring billing. Team plan: https://brightloop-plan.pages.dev/
+One system to run plans, subscriptions and recurring billing.
 
 ## Get it running
 
@@ -19,6 +19,7 @@ The first run takes a few minutes. It installs dependencies, sets up the databas
 | Add a dependency | `docker compose exec app npm install <package>`, then restart the app |
 | Open the database | `docker compose exec postgres psql -U brightloop` |
 | Stop everything | `docker compose down` |
+| Reset demo data between rehearsals | `docker compose exec app npm run db:reset` |
 | Wipe the database and dependencies, then start fresh | `docker compose down -v` |
 
 If port 3000 is taken, run `APP_PORT=3001 docker compose up` instead. On Windows, keep the repo inside WSL so code changes reload.
@@ -44,13 +45,26 @@ Use these instead of writing your own version.
 | Create invoices for everything due | `runBilling(db, { limit, cursor })` | `src/lib/billing.ts` |
 | Move the time machine forward or back to today | `jumpToDate()`, `returnToRealDate()` | `src/lib/time-machine.ts` |
 | Renew a subscription | `renewSubscription()` | `src/lib/lifecycle.ts` |
+| Monthly and yearly recurring revenue | `getRecurringRevenue()` | `src/lib/revenue.ts` |
+| Confirm all draft invoices | `confirmDraftInvoices()` | `src/lib/invoices.ts` |
+| Add a signed-in page | Put it in `src/app/(app)/` so it gets the shell | `docs/ui-kit.md` |
+| Move the date, run billing, match bank payments (screens) | `/admin/time-machine`, `/billing`, `/bank-matching` | `src/app/(app)/` |
+| Customer-only data and changes | `src/lib/portal.ts`, every function takes the customer's id | `src/lib/portal.ts` |
+| Protect a page | `await requirePageRole(["admin", "staff"])` | `src/lib/permissions.ts` |
+| Protect an API route | `authorizeRoute(["admin"])` | `src/lib/permissions.ts` |
+| Check a password in a form | `passwordProblem()` | `src/lib/password.ts` |
+| Record money received | `recordPayment()` | `src/lib/payments.ts` |
+| Upload a bank statement and match it | `importBankStatement()`, `pendingBankSuggestions()`, `confirmBankMatch()`, `ignoreBankLine()` | `src/lib/bank-statements.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
 | Show money, split or take a percentage | `formatMoney()`, `allocate()`, `percentOf()` | `src/lib/money.ts` |
+| Set up products, plans, taxes and discounts (admin screens) | `/setup` for all at once, or `/products`, `/plans`, `/taxes`, `/discounts` | `src/app/(app)/` |
+| Price a line with a variant chosen | `variantUnitPricePaise()` | `src/lib/catalog-validation.ts` |
 
 The database client is `db` from `@/db`, and tables are in `@/db/schema`. Every shared function that takes `db` also accepts a transaction.
 
 ## Rules
 
+- Every page that isn't public must call `requirePageRole`, and every API route must call `authorizeRoute`. The login check in `src/proxy.ts` only stops logged-out visitors, not the wrong role.
 - Never use `new Date()` for business logic. Use `appNow(db)`, or the time machine breaks.
 - Store money as whole paise and percentages as basis points (1800 means 18%).
 - Business dates are India dates as `YYYY-MM-DD` strings.

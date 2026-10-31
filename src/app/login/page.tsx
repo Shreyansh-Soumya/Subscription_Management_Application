@@ -1,6 +1,8 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
@@ -12,85 +14,92 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     setError("");
     setLoading(true);
 
     try {
-      const { error } = await authClient.signIn.email({
+      const { error: loginError } = await authClient.signIn.email({
         email,
         password,
       });
 
-      if (error) {
-        setError(error.message || "Invalid email or password.");
+      if (loginError) {
+        setError(loginError.message || "Invalid email or password.");
         return;
       }
 
-      router.replace("/subscriptions");
+      router.replace("/");
       router.refresh();
     } catch {
-      setError("Unable to sign in. Please try again.");
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mb-8">
-          <p className="text-sm font-semibold text-indigo-600">BRIGHTLOOP</p>
-          <h1 className="mt-3 text-2xl font-bold text-slate-900">
-            Welcome back
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Sign in to manage your subscriptions.
-          </p>
-        </div>
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Welcome back
+        </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <p className="mt-2 text-sm text-gray-500">
+          Sign in to your Brightloop account.
+        </p>
+
+        <form onSubmit={handleLogin} className="mt-8 space-y-5">
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-slate-700"
+              className="mb-2 block text-sm font-medium text-gray-700"
             >
               Email address
             </label>
+
             <input
               id="email"
               type="email"
-              required
-              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               placeholder="you@example.com"
+              autoComplete="email"
+              required
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-slate-700"
+              className="mb-2 block text-sm font-medium text-gray-700"
             >
               Password
             </label>
+
             <input
               id="password"
               type="password"
-              required
-              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
+          <p className="-mt-3 text-right text-sm">
+            <Link href="/forgot-password" className="font-semibold text-blue-600 hover:underline">
+              Forgot your password?
+            </Link>
+          </p>
+
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600" role="alert">
               {error}
             </p>
           )}
@@ -98,14 +107,20 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Access is restricted to authorized Brightloop users.
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/signup"
+            className="font-semibold text-blue-600 hover:underline"
+          >
+            Sign up
+          </Link>
         </p>
       </div>
     </main>

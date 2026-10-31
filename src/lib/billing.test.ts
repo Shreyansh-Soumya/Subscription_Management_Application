@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
-import { previewNextInvoice, runBilling } from "./billing";
+import { countDueSubscriptions, previewNextInvoice, runBilling } from "./billing";
 import { transitionSubscription } from "./transition";
 
 const { customers, discounts, discountProducts, events, invoiceLines, invoices, plans, products,
@@ -307,21 +307,17 @@ describe("billing dates across status changes", () => {
     expect((await reload(subscription.id)).nextBillingDate).toBe("2026-01-31");
   });
 
-  it("doesn't bill the paused months after resuming", async () => {
+  it("doesn't bill the paused months after resuming, but bills the period it resumes in", async () => {
     const subscription = await addSubscription({ status: "paused", startDate: "2020-01-15", nextBillingDate: "2020-02-15" });
     await transitionSubscription(db, { id: subscription.id, to: "active" });
-    const next = (await reload(subscription.id)).nextBillingDate;
+    const next = (await reload(subscription.id)).nextBillingDate!;
     const today = new Date().toISOString().slice(0, 10);
-    expect(next! >= addDaysBack(today)).toBe(true);
-    expect(next!.endsWith("-15")).toBe(true);
+    expect(next.endsWith("-15")).toBe(true);
+    expect(next <= today).toBe(true); // the period it resumes in, so it can't be skipped
+    expect(next > "2020-02-15").toBe(true); // the months spent paused aren't billed
   });
 });
 
-function addDaysBack(day: string) {
-  const moment = new Date(`${day}T00:00:00Z`);
-  moment.setUTCDate(moment.getUTCDate() - 1);
-  return moment.toISOString().slice(0, 10);
-}
 
 describe("runBilling when something goes wrong", () => {
   it("keeps billing the others when one subscription fails, and reports it", async () => {
@@ -403,5 +399,16 @@ describe("pausing and resuming never loses an invoice", () => {
     const subscription = await addSubscription({ status: "paused", startDate: "2020-01-15", nextBillingDate: "2099-01-15" });
     await transitionSubscription(db, { id: subscription.id, to: "active" });
     expect((await reload(subscription.id)).nextBillingDate).toBe("2099-01-15");
+  });
+});
+
+describe("countDueSubscriptions", () => {
+  it("counts running subscriptions due by today, including paused ones the run will report", async () => {
+    await addSubscription();
+    await addSubscription({ status: "paused" });
+    await addSubscription({ nextBillingDate: "2026-02-01" });
+    await addSubscription({ status: "draft" });
+    await addSubscription({ nextBillingDate: null });
+    expect(await countDueSubscriptions(db, "2026-01-31")).toBe(2);
   });
 });

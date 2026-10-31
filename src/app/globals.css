@@ -1,26 +1,207 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* The app is light-only, so dark: classes only apply inside an explicit .dark element. */
+@custom-variant dark (&:is(.dark *));
+
+/* Brightloop design system — Feedesk-derived (frozen baseline, plan §D). Light-only. */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Feedesk palette (observed from production CSS) */
+  --paper: #f5f0e4;
+  --paper-deep: #ece4d2;
+  --sheet: #fbf8f1;
+  --ink: #17223b;
+  --ink-soft: #4a5570;
+  --rule: #c9d6ea;
+  --rule-strong: #a9bbd8;
+  --stamp: #5b3fa8;
+  --stamp-red: #bd3522;
+  --paid: #2e7a4d;
+  --due: #b25a12;
+  --margin: #d9604f;
+
+  color-scheme: light;
+
+  /* shadcn/ui token mapping */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--sheet);
+  --card-foreground: var(--ink);
+  --popover: var(--sheet);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--sheet);
+  --secondary: var(--paper-deep);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-deep);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--paper-deep);
+  --accent-foreground: var(--ink);
+  --destructive: var(--stamp-red);
+  --destructive-foreground: var(--sheet);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--stamp);
+  --radius: 0rem;
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --radius-xl: 0rem;
+
+  /* charts (unused for now, mapped to palette) */
+  --chart-1: var(--stamp);
+  --chart-2: var(--paid);
+  --chart-3: var(--due);
+  --chart-4: var(--stamp-red);
+  --chart-5: var(--ink-soft);
+
+  /* shadcn sidebar tokens */
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--ink);
+  --sidebar-primary-foreground: var(--sheet);
+  --sidebar-accent: var(--paper-deep);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--rule-strong);
+  --sidebar-ring: var(--stamp);
+
+  /* application status tokens */
+  --status-paid: var(--paid);
+  --status-due: var(--due);
+  --status-danger: var(--stamp-red);
+  --status-accent: var(--stamp);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-stamp: var(--stamp);
+  --color-stamp-red: var(--stamp-red);
+  --color-paid: var(--paid);
+  --color-due: var(--due);
+  --color-margin: var(--margin);
+  --radius-sm: 0rem;
+  --radius-md: 0rem;
+  --radius-lg: 0rem;
+  --radius-xl: 0rem;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-hand: var(--font-kalam);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--stamp);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Typography utilities (plan §D) */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.headline {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-stretch: 68%;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+}
+
+.hand {
+  font-family: var(--font-hand);
+}
+
+/* Stamp treatment (plan §D; ink-texture filter optional) */
+.stamp-badge {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-stretch: 75%;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 2.5px solid currentColor;
+  border-radius: 5px;
+  padding: 0.18em 0.55em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  line-height: 1.4;
+  mix-blend-mode: multiply;
+}
+
+/* Printing shows only the page content, not the app's navigation. */
+@media print {
+  [data-slot="sidebar"],
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"],
+  header {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
 }

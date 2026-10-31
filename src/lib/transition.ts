@@ -3,7 +3,7 @@ import type { Db } from "@/db";
 import { events, invoices, plans, subscriptions } from "@/db/schema";
 import { billDueSubscription } from "./billing";
 import { appNow } from "./clock";
-import { firstBillingDateOnOrAfter, toBusinessDate } from "./dates";
+import { resumeBillingDate, toBusinessDate } from "./dates";
 import {
   checkInvoiceTransition,
   checkSubscriptionTransition,
@@ -22,7 +22,10 @@ type TransitionInput<Status> = {
 };
 
 /** The only way to change a subscription's status. Checks the rules and writes the timeline event. */
-export async function transitionSubscription(db: Db, input: TransitionInput<SubscriptionStatus>): Promise<void> {
+export async function transitionSubscription(
+  db: Db,
+  input: TransitionInput<SubscriptionStatus> & { expectedFrom?: SubscriptionStatus },
+): Promise<void> {
   await db.transaction(async (tx) => {
     const [row] = await tx
       .select({ subscription: subscriptions, plan: plans })
@@ -34,6 +37,9 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
 
     const now = await appNow(tx);
     const from = row.subscription.status;
+    if (input.expectedFrom && from !== input.expectedFrom) {
+      throw new TransitionError(`This subscription isn't ${input.expectedFrom}.`);
+    }
     const today = toBusinessDate(now);
     const check = checkSubscriptionTransition(from, input.to, {
       plan: row.plan,
@@ -54,9 +60,8 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
     if (from === "confirmed" && input.to === "active") {
       nextBillingDate ??= row.subscription.startDate;
     } else if (from === "paused" && input.to === "active") {
-      // Resuming continues from the next billing date, so the paused months aren't billed.
-      const resumeDate = firstBillingDateOnOrAfter(row.subscription.startDate, row.plan.frequency, today);
-      if (!nextBillingDate || nextBillingDate < resumeDate) nextBillingDate = resumeDate;
+      // Whole periods spent paused aren't billed, but the period it resumes in is.
+      nextBillingDate = resumeBillingDate(row.subscription.startDate, row.plan.frequency, nextBillingDate, today);
     }
 
     await tx.update(subscriptions).set({ status: input.to, nextBillingDate }).where(eq(subscriptions.id, input.id));
@@ -77,7 +82,7 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
 export async function transitionInvoice(db: Db, input: TransitionInput<InvoiceStatus>): Promise<void> {
   await db.transaction(async (tx) => {
     const [invoice] = await tx
-      .select({ status: invoices.status })
+      .select({ status: invoices.status, paidPaise: invoices.paidPaise, totalPaise: invoices.totalPaise })
       .from(invoices)
       .where(eq(invoices.id, input.id))
       .for("update");
@@ -85,6 +90,13 @@ export async function transitionInvoice(db: Db, input: TransitionInput<InvoiceSt
 
     const check = checkInvoiceTransition(invoice.status, input.to);
     if (!check.ok) throw new TransitionError(check.reason);
+
+    if (input.to === "cancelled" && invoice.paidPaise > 0) {
+      throw new TransitionError("This invoice has payments recorded, so it can't be cancelled.");
+    }
+    if (input.to === "paid" && invoice.paidPaise < invoice.totalPaise) {
+      throw new TransitionError("Record the full payment to mark this invoice as paid.");
+    }
 
     await tx.update(invoices).set({ status: input.to }).where(eq(invoices.id, input.id));
     await tx.insert(events).values({

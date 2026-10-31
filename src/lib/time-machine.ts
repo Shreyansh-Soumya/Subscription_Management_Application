@@ -2,7 +2,7 @@ import { and, count, eq, gte, lt, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { events, invoices } from "@/db/schema";
 import { appNow, appToday, setClockOffset } from "./clock";
-import { addDays } from "./dates";
+import { addDays, isRealDate } from "./dates";
 import { type LifecycleResult, runLifecycle } from "./lifecycle";
 
 /** Its message is safe to show to the user. */
@@ -10,12 +10,6 @@ export class TimeMachineError extends Error {}
 
 const MAX_JUMP_DAYS = 3650;
 const SYSTEM_ENTITY_ID = "00000000-0000-0000-0000-000000000000";
-
-function isRealDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const moment = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(moment.getTime()) && moment.toISOString().slice(0, 10) === value;
-}
 
 export type JumpResult = LifecycleResult & { from: string; to: string; newlyOverdue: number };
 
