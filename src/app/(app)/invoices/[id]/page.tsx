@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { StatusBadge } from "@/components/app/status-badge";
 import { db } from "@/db";
 import {
   invoices,
@@ -208,19 +209,17 @@ export default async function InvoiceDetailPage({
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{invoice.number}</h1>
+            <h1 className="headline text-[34px] sm:text-[44px]">{invoice.number}</h1>
             <p className="mt-1 text-sm text-ink-soft">
               Invoice details and billing breakdown
             </p>
           </div>
-          <span className="bg-paper-deep px-3 py-1.5 text-sm font-medium capitalize">
-            {invoice.status}
-          </span>
+          <StatusBadge status={invoice.status} />
         </div>
       </div>
 
       {error && (
-        <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="border border-red-200 bg-sheet border border-stamp-red p-3 text-sm text-stamp-red">
           {error}
         </div>
       )}
@@ -265,7 +264,7 @@ export default async function InvoiceDetailPage({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-ink-soft">
+              <thead className="bg-paper-deep text-xs uppercase text-ink-soft">
                 <tr>
                   <th className="px-5 py-3">Description</th>
                   <th className="px-5 py-3">Quantity</th>
@@ -375,7 +374,7 @@ export default async function InvoiceDetailPage({
                 <input type="hidden" name="status" value={action.status} />
                 <button
                   type="submit"
-                  className={`px-4 py-2.5 text-sm font-medium text-white ${action.style}`}
+                  className={`px-4 py-2.5 text-sm font-medium text-sheet ${action.style}`}
                 >
                   {action.label}
                 </button>

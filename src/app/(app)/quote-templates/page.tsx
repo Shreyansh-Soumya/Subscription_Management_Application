@@ -78,7 +78,7 @@ export default async function QuoteTemplatesPage() {
         <Link href="/subscriptions" className="text-sm text-ink-soft hover:underline">
           ← Back to subscriptions
         </Link>
-        <h1 className="mt-3 text-2xl font-bold">Quote templates</h1>
+        <h1 className="headline text-[34px] sm:text-[44px]">Quote templates</h1>
         <p className="mt-1 text-sm text-ink-soft">
           Create and manage reusable quotation configurations.
         </p>
@@ -116,12 +116,12 @@ export default async function QuoteTemplatesPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-semibold">{template.name}</h3>
-                    <span className="bg-blue-50 px-2.5 py-1 text-xs text-stamp">
+                    <span className="bg-paper-deep px-2.5 py-1 text-xs text-stamp">
                       {template.validityDays} days validity
                     </span>
                   </div>
 
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm text-ink-soft">
                     Plan: {template.planName} ({template.frequency})
                   </p>
 

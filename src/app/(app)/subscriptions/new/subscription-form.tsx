@@ -49,7 +49,7 @@ type Props = {
 };
 
 const fieldClass =
-  "w-full border border-rule-strong bg-sheet px-4 py-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-100";
+  "w-full border border-rule-strong bg-sheet px-4 py-3 text-sm outline-none focus:border-stamp focus:ring-rule";
 
 const labelClass = "mb-2 block text-sm font-medium text-ink";
 
@@ -331,7 +331,7 @@ export default function SubscriptionForm({
                   type="checkbox"
                   checked={discountIds.includes(discount.id)}
                   onChange={() => toggleDiscount(discount.id)}
-                  className="h-4 w-4 accent-slate-900"
+                  className="h-4 w-4 accent-[var(--stamp)]"
                 />
                 <span className="flex-1 text-sm font-medium">
                   {discount.name}
@@ -357,7 +357,7 @@ export default function SubscriptionForm({
       {error && (
         <div
           role="alert"
-          className="border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          className="border border-red-200 bg-sheet border border-stamp-red p-4 text-sm text-stamp-red"
         >
           {error}
         </div>
@@ -389,7 +389,7 @@ export default function SubscriptionForm({
             plans.length === 0 ||
             products.length === 0
           }
-          className="bg-ink px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-ink px-6 py-3 text-sm font-semibold text-sheet transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Creating..." : "Create subscription"}
         </button>

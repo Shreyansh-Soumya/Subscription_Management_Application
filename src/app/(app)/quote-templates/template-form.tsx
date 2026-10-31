@@ -182,7 +182,7 @@ export default function TemplateForm({
             type="button"
             onClick={addLine}
             disabled={lines.length >= 30}
-            className="border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+            className="border px-3 py-2 text-sm hover:bg-paper-deep disabled:opacity-50"
           >
             + Add product
           </button>
@@ -256,7 +256,7 @@ export default function TemplateForm({
                   type="button"
                   onClick={() => removeLine(index)}
                   disabled={lines.length === 1}
-                  className="border px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-30"
+                  className="border px-3 py-2 text-sm text-stamp-red hover:bg-sheet border border-stamp-red disabled:opacity-30"
                 >
                   Remove
                 </button>
@@ -266,13 +266,13 @@ export default function TemplateForm({
         })}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-stamp-red">{error}</p>}
       {success && <p className="text-sm text-green-700">{success}</p>}
 
       <button
         type="submit"
         disabled={isPending || plans.length === 0 || products.length === 0}
-        className="bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+        className="bg-black px-5 py-2.5 text-sm font-medium text-sheet hover:bg-ink-soft disabled:opacity-50"
       >
         {isPending ? "Creating..." : "Create quote template"}
       </button>
