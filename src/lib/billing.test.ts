@@ -322,3 +322,86 @@ function addDaysBack(day: string) {
   moment.setUTCDate(moment.getUTCDate() - 1);
   return moment.toISOString().slice(0, 10);
 }
+
+describe("runBilling when something goes wrong", () => {
+  it("keeps billing the others when one subscription fails, and reports it", async () => {
+    const bad = await addSubscription({}, 2_147_483_647); // the total overflows the invoice column
+    const good = await addSubscription();
+    const result = await runBilling(db, { today: "2026-01-31" });
+    expect(result.created).toBe(1);
+    expect(result.failed).toEqual([{ subscriptionId: bad.id, number: bad.number, reason: "Unexpected error" }]);
+    expect(await invoicesFor(good.id)).toHaveLength(1);
+    expect((await reload(bad.id)).nextBillingDate).toBe("2026-01-31");
+  });
+
+  it("treats a clash on invoice number as a failure, not as an already billed period", async () => {
+    const other = await addSubscription({ nextBillingDate: null });
+    await db.insert(invoices).values({
+      number: "INV-00001", subscriptionId: other.id, customerId, periodStart: "2025-01-01", periodEnd: "2025-01-31",
+      issueDate: "2025-01-01", dueDate: "2025-01-15", subtotalPaise: 1, totalPaise: 1, breakdown: {},
+    });
+    const subscription = await addSubscription();
+    const result = await runBilling(db, { today: "2026-01-31" });
+    expect(result.created).toBe(0);
+    expect(result.failed).toHaveLength(1);
+    expect((await reload(subscription.id)).nextBillingDate).toBe("2026-01-31");
+  });
+});
+
+describe("invoice numbers", () => {
+  it("doesn't use up a number when nothing is billed", async () => {
+    await addSubscription({}, 0);
+    await addSubscription({ status: "paused" });
+    await runBilling(db, { today: "2026-01-31" });
+    const subscription = await addSubscription();
+    await runBilling(db, { today: "2026-01-31" });
+    expect((await invoicesFor(subscription.id))[0].number).toBe("INV-00001");
+  });
+
+  it("leaves no gaps when two runs overlap", async () => {
+    const first = await addSubscription();
+    const second = await addSubscription();
+    await Promise.all([runBilling(db, { today: "2026-01-31" }), runBilling(db, { today: "2026-01-31" })]);
+    const numbers = [...(await invoicesFor(first.id)), ...(await invoicesFor(second.id))].map((i) => i.number).sort();
+    expect(numbers).toEqual(["INV-00001", "INV-00002"]);
+  });
+});
+
+describe("previewNextInvoice when billing has stopped", () => {
+  it("returns null for a running subscription with no next billing date", async () => {
+    const subscription = await addSubscription({ nextBillingDate: null });
+    expect(await previewNextInvoice(db, subscription.id)).toBeNull();
+  });
+
+  it("returns null when the next billing date is at or past expiry", async () => {
+    const subscription = await addSubscription({ expiryDate: "2026-01-31" });
+    expect(await previewNextInvoice(db, subscription.id)).toBeNull();
+  });
+
+  it("previews from the start date before a subscription is active", async () => {
+    const subscription = await addSubscription({ status: "confirmed", nextBillingDate: null });
+    expect((await previewNextInvoice(db, subscription.id))?.billingDate).toBe("2026-01-31");
+  });
+});
+
+describe("pausing and resuming never loses an invoice", () => {
+  it("bills what is already due before pausing", async () => {
+    const subscription = await addSubscription({ startDate: "2020-01-15", nextBillingDate: "2020-01-15", expiryDate: "2020-03-15" });
+    await transitionSubscription(db, { id: subscription.id, to: "paused" });
+    expect((await invoicesFor(subscription.id)).map((i) => i.periodStart)).toEqual(["2020-01-15", "2020-02-15"]);
+    expect((await reload(subscription.id)).status).toBe("paused");
+  });
+
+  it("creates nothing if the pause is refused", async () => {
+    const [noPause] = await db.insert(plans).values({ name: "No pause", pricePaise: 1, frequency: "monthly", canPause: false }).returning();
+    const subscription = await addSubscription({ planId: noPause.id, startDate: "2020-01-15", nextBillingDate: "2020-01-15" });
+    await expect(transitionSubscription(db, { id: subscription.id, to: "paused" })).rejects.toThrow();
+    expect(await invoicesFor(subscription.id)).toHaveLength(0);
+  });
+
+  it("never moves the billing date backwards on resume", async () => {
+    const subscription = await addSubscription({ status: "paused", startDate: "2020-01-15", nextBillingDate: "2099-01-15" });
+    await transitionSubscription(db, { id: subscription.id, to: "active" });
+    expect((await reload(subscription.id)).nextBillingDate).toBe("2099-01-15");
+  });
+});
