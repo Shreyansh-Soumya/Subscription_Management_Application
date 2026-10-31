@@ -113,7 +113,7 @@ function MetricSummaryCard({
           </p>
           <Icon className={cn("size-4 shrink-0", isSelected ? "text-stamp" : "text-ink-soft")} />
         </div>
-        <p className="num mt-2.5 font-mono text-[22px] font-semibold leading-tight text-ink sm:text-[24px]">
+        <p className="num mt-2.5 font-mono text-[20px] font-semibold leading-tight break-words text-ink">
           {value}
         </p>
         <p className="num mt-1 font-mono text-[11px] text-ink-soft">{meta}</p>
@@ -176,7 +176,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
       </PageHeader>
 
       {/* Financial Summary Metric Cards (Interactive Drill-downs) */}
-      <section aria-label="Key Financial Metrics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section aria-label="Key Financial Metrics" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,230px),1fr))] gap-4">
         <MetricSummaryCard
           metricKey="active_subscriptions"
           currentMetric={filters.metric}
@@ -300,10 +300,10 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           ) : null}
         </div>
 
-        <form action="/finance" method="get" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <form action="/finance" method="get" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
           <input type="hidden" name="metric" value={filters.metric} />
 
-          <div className="lg:col-span-2">
+          <div className="sm:col-span-2">
             <label htmlFor="q" className="block font-mono text-[10px] uppercase tracking-wider text-ink-soft">
               Search
             </label>
@@ -366,8 +366,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             </select>
           </div>
 
-          <div className="flex items-end gap-2">
-            <Button type="submit" variant="stamp" className="h-9 w-full">
+          <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-2">
+            <Button type="submit" variant="stamp" className="h-9 flex-1">
               Apply
             </Button>
             <Button asChild variant="outline-paper" className="h-9 shrink-0">
@@ -458,7 +458,7 @@ function renderDrillDownTable(
           header: "Subscription #",
           cell: (row) => (
             <Link
-              href={`/subscriptions`}
+              href={`/subscriptions/${row.subscriptionId}`}
               className="num font-mono text-[13px] font-semibold hover:underline"
             >
               {row.number}
@@ -540,7 +540,7 @@ function renderDrillDownTable(
           key: "invoiceNumber",
           header: "Invoice #",
           cell: (row) => (
-            <Link href={`/invoices`} className="num font-mono text-[13px] font-semibold hover:underline">
+            <Link href={`/invoices/${row.invoiceId}`} className="num font-mono text-[13px] font-semibold hover:underline">
               {row.invoiceNumber}
             </Link>
           ),
@@ -607,7 +607,7 @@ function renderDrillDownTable(
           key: "number",
           header: "Invoice #",
           cell: (row) => (
-            <Link href={`/invoices`} className="num font-mono text-[13px] font-semibold hover:underline">
+            <Link href={`/invoices/${row.invoiceId}`} className="num font-mono text-[13px] font-semibold hover:underline">
               {row.number}
             </Link>
           ),
@@ -696,7 +696,7 @@ function renderDrillDownTable(
           key: "invoiceNumber",
           header: "Invoice #",
           cell: (row) => (
-            <Link href={`/invoices`} className="num font-mono text-[13px] font-semibold hover:underline">
+            <Link href={`/invoices/${row.invoiceId}`} className="num font-mono text-[13px] font-semibold hover:underline">
               {row.invoiceNumber}
             </Link>
           ),
@@ -761,7 +761,7 @@ function renderDrillDownTable(
           key: "number",
           header: "Invoice #",
           cell: (row) => (
-            <Link href={`/invoices`} className="num font-mono text-[13px] font-semibold hover:underline">
+            <Link href={`/invoices/${row.invoiceId}`} className="num font-mono text-[13px] font-semibold hover:underline">
               {row.number}
             </Link>
           ),

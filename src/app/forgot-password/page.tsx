@@ -29,17 +29,17 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-900">Reset your password</h1>
+    <main className="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+      <div className="w-full max-w-md bg-sheet p-8 ">
+        <h1 className="headline text-[34px] sm:text-[44px]">Reset your password</h1>
         {sent ? (
-          <p role="status" className="mt-4 text-gray-600">
+          <p role="status" className="mt-4 text-ink-soft">
             If {email} has an account, a reset link is on its way. It works for one hour.
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">Email address</label>
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-ink">Email address</label>
               <input
                 id="email"
                 type="email"
@@ -47,17 +47,17 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 required
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600"
+                className="w-full border border-rule-strong px-4 py-3 outline-none focus:border-stamp"
               />
             </div>
-            {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+            {error && <p role="alert" className="bg-sheet border border-stamp-red p-3 text-sm text-stamp-red">{error}</p>}
+            <button type="submit" disabled={loading} className="w-full bg-ink py-3 font-semibold text-sheet hover:bg-ink-soft disabled:opacity-60">
               {loading ? "Sending..." : "Send reset link"}
             </button>
           </form>
         )}
         <p className="mt-6 text-center text-sm">
-          <Link href="/login" className="font-semibold text-blue-600 hover:underline">Back to sign in</Link>
+          <Link href="/login" className="font-semibold text-stamp hover:underline">Back to sign in</Link>
         </p>
       </div>
     </main>

@@ -41,13 +41,13 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-900">
+    <main className="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+      <div className="w-full max-w-md bg-sheet p-8 ">
+        <h1 className="headline text-[34px] sm:text-[44px]">
           Welcome back
         </h1>
 
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-ink-soft">
           Sign in to your Brightloop account.
         </p>
 
@@ -55,7 +55,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-ink"
             >
               Email address
             </label>
@@ -68,14 +68,14 @@ export default function LoginPage() {
               placeholder="you@example.com"
               autoComplete="email"
               required
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              className="w-full border border-rule-strong px-4 py-3 outline-none focus:border-stamp focus:ring-2 focus:ring-rule"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-gray-700"
+              className="mb-2 block text-sm font-medium text-ink"
             >
               Password
             </label>
@@ -88,18 +88,18 @@ export default function LoginPage() {
               placeholder="Enter your password"
               autoComplete="current-password"
               required
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              className="w-full border border-rule-strong px-4 py-3 outline-none focus:border-stamp focus:ring-2 focus:ring-rule"
             />
           </div>
 
           <p className="-mt-3 text-right text-sm">
-            <Link href="/forgot-password" className="font-semibold text-blue-600 hover:underline">
+            <Link href="/forgot-password" className="font-semibold text-stamp hover:underline">
               Forgot your password?
             </Link>
           </p>
 
           {error && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600" role="alert">
+            <p className="bg-sheet border border-stamp-red p-3 text-sm text-stamp-red" role="alert">
               {error}
             </p>
           )}
@@ -107,17 +107,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full bg-ink py-3 font-semibold text-sheet transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-ink-soft">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-semibold text-blue-600 hover:underline"
+            className="font-semibold text-stamp hover:underline"
           >
             Sign up
           </Link>

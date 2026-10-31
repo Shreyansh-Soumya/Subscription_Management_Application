@@ -1,17 +1,25 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  CalendarClock,
   ChartColumn,
   CreditCard,
+  FileText,
   Home,
+  Landmark,
   Layers,
+  ListChecks,
   LayoutDashboard,
   Package,
   Percent,
+  Play,
+  Receipt,
   ReceiptText,
   Repeat,
   Settings,
+  UserPlus,
   Users,
   Wallet,
+  Wand2,
 } from "lucide-react";
 
 /**
@@ -43,17 +51,23 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     {
       label: "Catalogue",
       items: [
+        { title: "Guided setup", href: "/setup", icon: Wand2 },
         { title: "Products", href: "/products", icon: Package },
         { title: "Plans", href: "/plans", icon: Layers },
+        { title: "Taxes", href: "/taxes", icon: Receipt },
       ],
     },
     {
       label: "Operations",
       items: [
+        { title: "Today", href: "/today", icon: ListChecks },
         { title: "Subscriptions", href: "/subscriptions", icon: Repeat },
+        { title: "Quote templates", href: "/quote-templates", icon: FileText },
         { title: "Customers", href: "/customers", icon: Users },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
+        { title: "Billing run", href: "/billing", icon: Play },
+        { title: "Bank matching", href: "/bank-matching", icon: Landmark },
         { title: "Discounts", href: "/discounts", icon: Percent },
       ],
     },
@@ -66,7 +80,11 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     },
     {
       label: "Workspace",
-      items: [{ title: "Settings", href: "/settings", icon: Settings }],
+      items: [
+        { title: "Time machine", href: "/admin/time-machine", icon: CalendarClock },
+        { title: "Add staff", href: "/admin/staff", icon: UserPlus },
+        { title: "Settings", href: "/settings", icon: Settings },
+      ],
     },
   ],
   staff: [
@@ -78,10 +96,14 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
       label: "Operations",
       items: [
         { title: "Customers", href: "/customers", icon: Users },
+        { title: "Today", href: "/today", icon: ListChecks },
         { title: "Subscriptions", href: "/subscriptions", icon: Repeat },
+        { title: "Quote templates", href: "/quote-templates", icon: FileText },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
         { title: "Finance", href: "/finance", icon: Wallet },
+        { title: "Billing run", href: "/billing", icon: Play },
+        { title: "Bank matching", href: "/bank-matching", icon: Landmark },
       ],
     },
   ],
@@ -95,6 +117,7 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
       items: [
         { title: "My Subscriptions", href: "/my-subscriptions", icon: Repeat },
         { title: "My Invoices", href: "/my-invoices", icon: ReceiptText },
+        { title: "Payments", href: "/my-payments", icon: CreditCard },
       ],
     },
     {

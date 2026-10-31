@@ -98,6 +98,7 @@ export type FinanceSubscriptionItem = {
 };
 
 export type FinanceRevenueItem = {
+  invoiceId: string;
   paymentId: string;
   paidOn: string;
   invoiceNumber: string;
@@ -122,6 +123,7 @@ export type FinanceOwedItem = {
 };
 
 export type FinancePaymentItem = {
+  invoiceId: string;
   paymentId: string;
   paidOn: string;
   invoiceNumber: string;
@@ -518,6 +520,7 @@ export async function getFinanceDrillDown(
         .select({
           paymentId: payments.id,
           paidOn: payments.paidOn,
+          invoiceId: invoices.id,
           invoiceNumber: invoices.number,
           customerName: customers.name,
           customerEmail: customers.email,
@@ -598,6 +601,7 @@ export async function getFinanceDrillDown(
         .select({
           paymentId: payments.id,
           paidOn: payments.paidOn,
+          invoiceId: invoices.id,
           invoiceNumber: invoices.number,
           customerName: customers.name,
           customerEmail: customers.email,

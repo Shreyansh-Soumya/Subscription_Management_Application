@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, isNotNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNotNull, lte, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   discountProducts,
@@ -38,7 +38,7 @@ async function loadLines(db: Db, subscriptionId: string): Promise<InvoiceLineInp
     .select()
     .from(subscriptionLines)
     .where(eq(subscriptionLines.subscriptionId, subscriptionId))
-    .orderBy(asc(subscriptionLines.id));
+    .orderBy(asc(subscriptionLines.productId), asc(subscriptionLines.id)); // the portal's preview uses this order too
   if (lines.length === 0) return [];
 
   const taxes = await db
@@ -59,7 +59,7 @@ async function loadLines(db: Db, subscriptionId: string): Promise<InvoiceLineInp
 }
 
 /** The discount rules that could apply: attached whole-subscription ones, plus product ones for these lines. */
-async function loadDiscounts(db: Db, subscriptionId: string, lines: InvoiceLineInput[]): Promise<DiscountRule[]> {
+export async function loadDiscounts(db: Db, subscriptionId: string, lines: InvoiceLineInput[]): Promise<DiscountRule[]> {
   const productIds = [...new Set(lines.map((line) => line.productId))];
   const productLinks = productIds.length
     ? await db
@@ -315,6 +315,21 @@ async function runBatch(db: Db, today: string, occurredAt: Date, limit: number, 
   };
   await Promise.all(Array.from({ length: Math.min(PARALLEL_SUBSCRIPTIONS, batch.length) }, worker));
   return result;
+}
+
+/** How many subscriptions the next billing run will go through, for its progress bar. */
+export async function countDueSubscriptions(db: Db, today: string): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(subscriptions)
+    .where(
+      and(
+        or(eq(subscriptions.status, "active"), eq(subscriptions.status, "paused")),
+        isNotNull(subscriptions.nextBillingDate),
+        lte(subscriptions.nextBillingDate, today),
+      ),
+    );
+  return row.total;
 }
 
 /**

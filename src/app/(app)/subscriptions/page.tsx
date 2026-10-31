@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { and, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
+import { DataTable, type TableColumn } from "@/components/app/data-table";
+import { EmptyState } from "@/components/app/empty-state";
+import { PageHeader } from "@/components/app/page-header";
+import { StatusBadge } from "@/components/app/status-badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { db } from "@/db";
+import { formatDate } from "@/lib/format";
 import { customers, plans, subscriptions } from "@/db/schema";
 import { requirePageRole } from "@/lib/permissions";
 
@@ -20,16 +27,10 @@ type SubscriptionStatus = (typeof statuses)[number];
 type SearchParams = {
   q?: string | string[];
   status?: string | string[];
+  page?: string | string[];
 };
 
-const statusStyles: Record<SubscriptionStatus, string> = {
-  draft: "bg-slate-100 text-slate-700",
-  quotation: "bg-purple-100 text-purple-700",
-  confirmed: "bg-blue-100 text-blue-700",
-  active: "bg-green-100 text-green-700",
-  paused: "bg-amber-100 text-amber-700",
-  closed: "bg-red-100 text-red-700",
-};
+const PAGE_SIZE = 50;
 
 function formatStatus(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1);
@@ -74,6 +75,16 @@ export default async function SubscriptionsPage({
 
   const whereClause = filters.length ? and(...filters) : undefined;
 
+  const [{ matching }] = await db
+    .select({ matching: count() })
+    .from(subscriptions)
+    .innerJoin(customers, eq(subscriptions.customerId, customers.id))
+    .innerJoin(plans, eq(subscriptions.planId, plans.id))
+    .where(whereClause);
+  const pageCount = Math.max(1, Math.ceil(matching / PAGE_SIZE));
+  const requestedPage = Number.parseInt(String(params.page ?? "1"), 10);
+  const page = Number.isInteger(requestedPage) && requestedPage >= 1 ? Math.min(requestedPage, pageCount) : 1;
+
   // Fetch subscriptions with their customer and plan information.
   const rows = await db
     .select({
@@ -92,7 +103,9 @@ export default async function SubscriptionsPage({
     .innerJoin(customers, eq(subscriptions.customerId, customers.id))
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(whereClause)
-    .orderBy(desc(subscriptions.createdAt));
+    .orderBy(desc(subscriptions.createdAt), desc(subscriptions.number))
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
 
   // Count subscriptions by status for the summary cards.
   const statusCounts = await db
@@ -125,170 +138,100 @@ export default async function SubscriptionsPage({
     { label: "Paused", value: counts.paused },
   ];
 
+  const columns: TableColumn<(typeof rows)[number]>[] = [
+    {
+      key: "number",
+      header: "Subscription",
+      cell: (row) => (
+        <Link href={`/subscriptions/${row.id}`} className="num font-mono text-[13px] font-semibold text-stamp underline-offset-4 hover:underline">
+          {row.number}
+        </Link>
+      ),
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      cell: (row) => (
+        <>
+          <span className="block font-medium">{row.customerName}</span>
+          <span className="block text-xs text-ink-soft">{row.customerEmail}</span>
+        </>
+      ),
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      cell: (row) => (
+        <>
+          <span className="block font-medium">{row.planName}</span>
+          <span className="block text-xs capitalize text-ink-soft">{row.frequency}</span>
+        </>
+      ),
+    },
+    { key: "start", header: "Start date", cell: (row) => <span className="num whitespace-nowrap">{formatDate(row.startDate)}</span> },
+    {
+      key: "next",
+      header: "Next billing",
+      cell: (row) => <span className="num whitespace-nowrap">{row.nextBillingDate ? formatDate(row.nextBillingDate) : "Not scheduled"}</span>,
+    },
+    { key: "status", header: "Status", cell: (row) => <StatusBadge status={row.status} /> },
+  ];
+
+  const pageHref = (target: number) => {
+    const query = new URLSearchParams();
+    if (search) query.set("q", search);
+    if (status !== "all") query.set("status", status);
+    if (target > 1) query.set("page", String(target));
+    const text = query.toString();
+    return text ? `/subscriptions?${text}` : "/subscriptions";
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50 p-6 text-slate-900 md:p-10">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <p className="text-sm font-medium text-slate-500">
-              Brightloop / Management
-            </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">
-              Subscriptions
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Manage and monitor all your customer subscriptions.
-            </p>
+    <>
+      <PageHeader title="Subscriptions" description="Search and open every customer subscription.">
+        <Button asChild variant="outline"><Link href="/quote-templates">Quote templates</Link></Button>
+        <Button asChild variant="stamp"><Link href="/subscriptions/new">New subscription</Link></Button>
+      </PageHeader>
+
+      <dl className="mt-6 grid max-w-3xl grid-cols-2 gap-3 border-t-[1.5px] border-ink pt-3 sm:grid-cols-4">
+        {summaryCards.map((card) => (
+          <div key={card.label}>
+            <dt className="text-[13px] text-ink-soft">{card.label}</dt>
+            <dd className="headline num mt-1 text-[30px]">{card.value.toLocaleString("en-IN")}</dd>
           </div>
+        ))}
+      </dl>
 
-          <Link
-            href="/subscriptions/new"
-            className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
-          >
-            + New subscription
-          </Link>
-        </header>
-
-        <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {summaryCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <p className="text-sm text-slate-500">{card.label}</p>
-              <p className="mt-2 text-3xl font-bold">{card.value}</p>
-            </div>
+      <form action="/subscriptions" method="GET" className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <Input type="search" name="q" defaultValue={search} aria-label="Search subscriptions" placeholder="Number, customer, email or plan" className="min-w-0 flex-1" />
+        <select name="status" defaultValue={status} aria-label="Status" className="h-9 border border-input bg-transparent px-2 text-sm">
+          <option value="all">All statuses</option>
+          {statuses.map((item) => (
+            <option key={item} value={item}>{formatStatus(item)}</option>
           ))}
-        </section>
+        </select>
+        <Button type="submit">Apply filters</Button>
+        <Button asChild variant="outline"><Link href="/subscriptions">Reset</Link></Button>
+      </form>
 
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold">All subscriptions</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Search by subscription number, customer, email, or plan.
-            </p>
+      <DataTable
+        className="mt-4"
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.id}
+        emptyState={<EmptyState className="border-0 bg-transparent" title="No subscriptions found" description="Try a different search or status." />}
+      />
 
-            <form
-              action="/subscriptions"
-              method="GET"
-              className="mt-5 flex flex-col gap-3 sm:flex-row"
-            >
-              <input
-                type="search"
-                name="q"
-                defaultValue={search}
-                placeholder="Search subscriptions..."
-                className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-slate-500"
-              />
-
-              <select
-                name="status"
-                defaultValue={status}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-slate-500"
-              >
-                <option value="all">All statuses</option>
-                {statuses.map((item) => (
-                  <option key={item} value={item}>
-                    {formatStatus(item)}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="submit"
-                className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700"
-              >
-                Apply filters
-              </button>
-
-              <Link
-                href="/subscriptions"
-                className="rounded-lg border border-slate-300 px-5 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Reset
-              </Link>
-            </form>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-5 py-4 font-semibold">Subscription</th>
-                  <th className="px-5 py-4 font-semibold">Customer</th>
-                  <th className="px-5 py-4 font-semibold">Plan</th>
-                  <th className="px-5 py-4 font-semibold">Start date</th>
-                  <th className="px-5 py-4 font-semibold">Next billing</th>
-                  <th className="px-5 py-4 font-semibold">Status</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((subscription) => (
-                  <tr
-                    key={subscription.id}
-                    className="transition hover:bg-slate-50"
-                  >
-                    <td className="whitespace-nowrap px-5 py-4 font-semibold">
-                      {subscription.number}
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <p className="font-medium">{subscription.customerName}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {subscription.customerEmail}
-                      </p>
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <p className="font-medium">{subscription.planName}</p>
-                      <p className="mt-1 text-xs capitalize text-slate-500">
-                        {subscription.frequency}
-                      </p>
-                    </td>
-
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-600">
-                      {subscription.startDate}
-                    </td>
-
-                    <td className="whitespace-nowrap px-5 py-4 text-slate-600">
-                      {subscription.nextBillingDate ?? "—"}
-                    </td>
-
-                    <td className="whitespace-nowrap px-5 py-4">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[subscription.status]}`}
-                      >
-                        {formatStatus(subscription.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-
-                {rows.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-5 py-12 text-center text-slate-500"
-                    >
-                      <p className="font-medium text-slate-700">
-                        No subscriptions found.
-                      </p>
-                      <p className="mt-1 text-sm">
-                        Try changing your search or status filter.
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="border-t border-slate-200 px-5 py-4 text-sm text-slate-500">
-            Showing {rows.length} subscription{rows.length === 1 ? "" : "s"}
-          </div>
-        </section>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-soft">
+        <span>Showing {rows.length.toLocaleString("en-IN")} of {matching.toLocaleString("en-IN")}</span>
+        {pageCount > 1 && (
+          <span className="flex items-center gap-2">
+            {page > 1 && <Button asChild size="sm" variant="outline"><Link href={pageHref(page - 1)}>Previous</Link></Button>}
+            <span>Page {page} of {pageCount.toLocaleString("en-IN")}</span>
+            {page < pageCount && <Button asChild size="sm" variant="outline"><Link href={pageHref(page + 1)}>Next</Link></Button>}
+          </span>
+        )}
       </div>
-    </main>
+    </>
   );
 }

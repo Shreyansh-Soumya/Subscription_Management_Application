@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { bankStatementLines, customers, invoices } from "@/db/schema";
-import { type BankLine, type MatchSuggestion, parseBankStatement, suggestMatches } from "./bank-matching";
+import { type BankLine, type MatchSuggestion, type OpenInvoice, parseBankStatement, suggestMatches } from "./bank-matching";
 import { PaymentError, recordPayment } from "./payments";
 
 const INSERT_CHUNK = 500;
@@ -59,17 +59,9 @@ export type BankSuggestion = Omit<MatchSuggestion, "lineNumber"> & {
   invoiceNumber: string | null;
 };
 
-/** Everything still waiting for a decision, with a suggested invoice where there is one. */
-export async function pendingBankSuggestions(db: Db): Promise<BankSuggestion[]> {
-  const pending = await db
-    .select()
-    .from(bankStatementLines)
-    .where(eq(bankStatementLines.status, "pending"))
-    .orderBy(asc(bankStatementLines.bookedOn), asc(bankStatementLines.id))
-    .limit(500);
-  if (pending.length === 0) return [];
-
-  const open = await db
+/** Confirmed invoices with money still owed, oldest due date first. */
+export async function openInvoicesForMatching(db: Db): Promise<OpenInvoice[]> {
+  return db
     .select({
       id: invoices.id,
       number: invoices.number,
@@ -80,6 +72,19 @@ export async function pendingBankSuggestions(db: Db): Promise<BankSuggestion[]> 
     .innerJoin(customers, eq(invoices.customerId, customers.id))
     .where(and(eq(invoices.status, "confirmed"), lt(invoices.paidPaise, invoices.totalPaise)))
     .orderBy(asc(invoices.dueDate), asc(invoices.id));
+}
+
+/** Everything still waiting for a decision, with a suggested invoice where there is one. */
+export async function pendingBankSuggestions(db: Db): Promise<BankSuggestion[]> {
+  const pending = await db
+    .select()
+    .from(bankStatementLines)
+    .where(eq(bankStatementLines.status, "pending"))
+    .orderBy(asc(bankStatementLines.bookedOn), asc(bankStatementLines.id))
+    .limit(500);
+  if (pending.length === 0) return [];
+
+  const open = await openInvoicesForMatching(db);
 
   const suggestions = suggestMatches(
     pending.map((line, index) => ({

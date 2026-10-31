@@ -14,7 +14,7 @@ import { seedPassword } from "./seed-password";
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env first.");
 const loginPassword = seedPassword(url, process.env.SEED_PASSWORD);
-const client = postgres(url, { max: 1 });
+const client = postgres(url, { max: 1, prepare: false });
 const db = drizzle({ client, schema });
 const {
   account, customers, discounts, discountProducts, events, invoiceLines, invoices, payments, plans,
