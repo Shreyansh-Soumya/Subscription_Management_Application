@@ -20,6 +20,7 @@ The first run takes a few minutes. It installs dependencies, sets up the databas
 | Open the database | `docker compose exec postgres psql -U brightloop` |
 | Stop everything | `docker compose down` |
 | Reset demo data between rehearsals | `docker compose exec app npm run db:reset` |
+| Add 5,000 subscriptions, all billing tomorrow | `docker compose exec app npm run db:seed:big` |
 | Wipe the database and dependencies, then start fresh | `docker compose down -v` |
 
 If port 3000 is taken, run `APP_PORT=3001 docker compose up` instead. On Windows, keep the repo inside WSL so code changes reload.
