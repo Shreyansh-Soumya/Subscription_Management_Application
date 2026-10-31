@@ -12,7 +12,8 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "vercel-build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then npm run db:migrate; fi && next build",
-    "db:reset": "tsx src/db/reset.ts && tsx src/db/seed.ts"
+    "db:reset": "tsx src/db/reset.ts && tsx src/db/seed.ts",
+    "db:seed:big": "tsx src/db/big-seed.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.14",
