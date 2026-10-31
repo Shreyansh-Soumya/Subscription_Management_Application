@@ -244,3 +244,38 @@ describe("returnToRealDate", () => {
     expect(await appToday(db)).toBe(realToday);
   });
 });
+
+describe("renewal term length", () => {
+  it("stays on the billing cycle after a short month", async () => {
+    const plan = await addPlan();
+    const subscription = await addSubscription(plan.id, { startDate: "2026-01-31", expiryDate: "2026-02-28", nextBillingDate: "2026-02-28" });
+    await renewSubscription(db, { id: subscription.id });
+    expect((await reload(subscription.id)).expiryDate).toBe("2026-03-31");
+    await renewSubscription(db, { id: subscription.id });
+    expect((await reload(subscription.id)).expiryDate).toBe("2026-04-30");
+  });
+
+  it("extends by the exact number of days when the term isn't whole billing periods", async () => {
+    const plan = await addPlan();
+    const subscription = await addSubscription(plan.id, { startDate: "2026-01-15", expiryDate: "2026-03-01", nextBillingDate: "2026-02-15" });
+    await renewSubscription(db, { id: subscription.id });
+    expect((await reload(subscription.id)).expiryDate).toBe("2026-04-15"); // another 45 days
+  });
+
+  it("doesn't turn a 30-day term on a yearly plan into a full year", async () => {
+    const plan = await addPlan({ frequency: "yearly" });
+    const subscription = await addSubscription(plan.id, { startDate: "2026-01-01", expiryDate: "2026-01-31", nextBillingDate: "2027-01-01" });
+    await renewSubscription(db, { id: subscription.id });
+    expect((await reload(subscription.id)).expiryDate).toBe("2026-03-02");
+  });
+});
+
+describe("expired plans that can't renew", () => {
+  it("lists them as needing closing, because renewal would be refused", async () => {
+    const plan = await addPlan({ autoClose: false, canRenew: false });
+    const subscription = await addSubscription(plan.id);
+    const result = await runLifecycle(db, { today: "2026-04-15" });
+    expect(result.needsRenewal).toEqual([]);
+    expect(result.needsClosing).toEqual([{ subscriptionId: subscription.id, number: subscription.number }]);
+  });
+});

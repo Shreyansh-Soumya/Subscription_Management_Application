@@ -3,14 +3,23 @@ import type { Db } from "@/db";
 import { events, plans, subscriptions } from "@/db/schema";
 import { billDueSubscription } from "./billing";
 import { appNow } from "./clock";
-import { addPeriods, firstBillingDateOnOrAfter, toBusinessDate } from "./dates";
+import {
+  addDays,
+  addPeriods,
+  type BillingFrequency,
+  daysBetween,
+  firstBillingDateOnOrAfter,
+  periodsUntil,
+  toBusinessDate,
+} from "./dates";
 import { transitionSubscription, TransitionError } from "./transition";
 
 type SubscriptionRef = { subscriptionId: string; number: string };
 
 export type LifecycleResult = {
   closed: SubscriptionRef[];
-  needsRenewal: SubscriptionRef[]; // reached expiry on a plan that doesn't close itself
+  needsRenewal: SubscriptionRef[]; // reached expiry on a plan that doesn't close itself, and can be renewed
+  needsClosing: SubscriptionRef[]; // reached expiry on a plan that can't be renewed or close itself
   failed: (SubscriptionRef & { reason: string })[];
   invoicesCreated: number;
 };
@@ -22,10 +31,10 @@ export type LifecycleResult = {
 export async function runLifecycle(db: Db, options: { today?: string } = {}): Promise<LifecycleResult> {
   const now = await appNow(db);
   const today = options.today ?? toBusinessDate(now);
-  const result: LifecycleResult = { closed: [], needsRenewal: [], failed: [], invoicesCreated: 0 };
+  const result: LifecycleResult = { closed: [], needsRenewal: [], needsClosing: [], failed: [], invoicesCreated: 0 };
 
   const expired = await db
-    .select({ id: subscriptions.id, number: subscriptions.number, autoClose: plans.autoClose })
+    .select({ id: subscriptions.id, number: subscriptions.number, autoClose: plans.autoClose, canRenew: plans.canRenew })
     .from(subscriptions)
     .innerJoin(plans, eq(subscriptions.planId, plans.id))
     .where(
@@ -39,7 +48,7 @@ export async function runLifecycle(db: Db, options: { today?: string } = {}): Pr
   for (const subscription of expired) {
     const ref = { subscriptionId: subscription.id, number: subscription.number };
     if (!subscription.autoClose) {
-      result.needsRenewal.push(ref);
+      (subscription.canRenew ? result.needsRenewal : result.needsClosing).push(ref);
       continue;
     }
     try {
@@ -53,6 +62,23 @@ export async function runLifecycle(db: Db, options: { today?: string } = {}): Pr
     }
   }
   return result;
+}
+
+/**
+ * Whole-period terms count from the start date, so they stay on the billing cycle after short months.
+ * Any other term repeats its exact number of days.
+ */
+function nextExpiry(start: string, frequency: BillingFrequency, termStart: string, expiry: string): string {
+  const periodsToTermStart = periodsUntil(start, frequency, termStart);
+  const periodsToExpiry = periodsUntil(start, frequency, expiry);
+  const isWholePeriods =
+    addPeriods(start, frequency, periodsToTermStart) === termStart &&
+    addPeriods(start, frequency, periodsToExpiry) === expiry &&
+    periodsToExpiry > periodsToTermStart;
+
+  return isWholePeriods
+    ? addPeriods(start, frequency, 2 * periodsToExpiry - periodsToTermStart)
+    : addDays(expiry, daysBetween(termStart, expiry));
 }
 
 /** Extends a subscription by the length of its current term, and restarts billing if expiry had stopped it. */
@@ -78,9 +104,7 @@ export async function renewSubscription(
     if (!oldExpiry) throw new TransitionError("This subscription has no expiry date to extend.");
 
     const termStart = subscription.termStartDate ?? subscription.startDate;
-    let termPeriods = 1;
-    while (addPeriods(termStart, plan.frequency, termPeriods) < oldExpiry) termPeriods += 1;
-    const expiryDate = addPeriods(oldExpiry, plan.frequency, termPeriods);
+    const expiryDate = nextExpiry(subscription.startDate, plan.frequency, termStart, oldExpiry);
 
     await tx
       .update(subscriptions)

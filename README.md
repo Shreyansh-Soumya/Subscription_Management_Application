@@ -17,6 +17,8 @@ Check your setup with `npm test`.
 
 Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. They work once login is built.
 
+The daily job at `/api/cron/daily` closes ended plans and bills what is due. It refuses every call until `CRON_SECRET` is set, so production needs that value in Vercel.
+
 To change the schema, ask Swayam first. Then edit `src/db/schema.ts` and run `npm run db:generate` and `npm run db:migrate`. Commit the new `drizzle/` files: production applies them automatically on deploy, so only add changes that old code can survive, such as new columns that are nullable or have defaults.
 
 ## Shared functions
