@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
-export function SignOutButton() {
+export function useSignOut() {
   const router = useRouter();
   const [failed, setFailed] = useState(false);
 
@@ -18,6 +18,12 @@ export function SignOutButton() {
     router.replace("/login");
     router.refresh();
   };
+
+  return { signOut, failed };
+}
+
+export function SignOutButton() {
+  const { signOut, failed } = useSignOut();
 
   return (
     <span className="inline-flex items-center gap-3">
