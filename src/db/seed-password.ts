@@ -1,5 +1,5 @@
 const DEMO_PASSWORD = "Brightloop@123";
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "postgres"]); // "postgres" is the Docker Compose service
 
 /** The public demo password is for local databases only, because it's published in the README. */
 export function seedPassword(databaseUrl: string, privatePassword: string | undefined): string {

@@ -8,6 +8,7 @@ describe("seedPassword", () => {
   it("uses the documented demo password on a local database", () => {
     expect(seedPassword(local, undefined)).toBe("Brightloop@123");
     expect(seedPassword("postgres://a:b@localhost:5432/c", undefined)).toBe("Brightloop@123");
+    expect(seedPassword("postgres://a:b@postgres:5432/c", undefined)).toBe("Brightloop@123"); // the Docker service
   });
 
   it("refuses a hosted database without a private password", () => {
