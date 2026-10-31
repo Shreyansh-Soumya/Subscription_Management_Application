@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, lte, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   discountProducts,
@@ -28,6 +28,7 @@ export type BillingResult = {
   created: number;
   billedPaise: number;
   skipped: BillingSkip[];
+  failed: BillingSkip[]; // stays due, so the next run tries again
   hasMore: boolean;
   cursor?: string; // pass to the next call to continue a batched run
 };
@@ -101,7 +102,10 @@ export async function previewNextInvoice(
   const [subscription] = await db.select().from(subscriptions).where(eq(subscriptions.id, subscriptionId));
   if (!subscription || subscription.status === "closed") return null;
 
-  const billingDate = subscription.nextBillingDate ?? subscription.startDate;
+  const isRunning = subscription.status === "active" || subscription.status === "paused";
+  const billingDate = isRunning ? subscription.nextBillingDate : subscription.startDate;
+  if (!billingDate || (subscription.expiryDate && billingDate >= subscription.expiryDate)) return null;
+
   const lines = await loadLines(db, subscriptionId);
   const rules = await loadDiscounts(db, subscriptionId, lines);
   return { billingDate, computation: computeInvoice({ lines, discounts: rules, on: billingDate }) };
@@ -113,7 +117,7 @@ type PeriodOutcome =
   | { kind: "stop" };
 
 /** Bills one period in one transaction, so an invoice and its moved-on billing date always save together. */
-async function billNextPeriod(db: Db, subscriptionId: string, today: string, occurredAt: Date, invoiceNumber: string): Promise<PeriodOutcome> {
+async function billNextPeriod(db: Db, subscriptionId: string, today: string, occurredAt: Date): Promise<PeriodOutcome> {
   return db.transaction(async (tx) => {
     // The row lock makes overlapping runs wait here, then see the billing date the first run moved on.
     const [row] = await tx
@@ -140,6 +144,21 @@ async function billNextPeriod(db: Db, subscriptionId: string, today: string, occ
     const moveOn = () =>
       tx.update(subscriptions).set({ nextBillingDate: nextDate }).where(eq(subscriptions.id, subscriptionId));
 
+    const [alreadyBilled] = await tx
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.subscriptionId, subscriptionId),
+          eq(invoices.periodStart, periodStart),
+          ne(invoices.status, "cancelled"),
+        ),
+      );
+    if (alreadyBilled) {
+      await moveOn();
+      return { kind: "skipped", reason: "Already billed for this period", keepGoing: true } as const;
+    }
+
     const rules = await loadDiscounts(tx, subscriptionId, lines);
     const limitedIds = rules.filter((rule) => rule.usageLimit !== null).map((rule) => rule.id).sort();
     if (limitedIds.length > 0) {
@@ -157,6 +176,9 @@ async function billNextPeriod(db: Db, subscriptionId: string, today: string, occ
     }
 
     const computation = computeInvoice({ lines, discounts: rules, on: periodStart });
+    // Taken last, inside the transaction, so a rollback or a skipped period can't leave a gap in the numbers.
+    const invoiceNumber = await nextNumber(tx, "INV");
+    // No onConflict here: the checks above and the unique indexes make any clash a real error worth reporting.
     const [invoice] = await tx
       .insert(invoices)
       .values({
@@ -174,13 +196,7 @@ async function billNextPeriod(db: Db, subscriptionId: string, today: string, occ
         totalPaise: computation.totalPaise,
         breakdown: computation,
       })
-      .onConflictDoNothing()
       .returning({ id: invoices.id });
-
-    if (!invoice) {
-      await moveOn();
-      return { kind: "skipped", reason: "Already billed for this period", keepGoing: true } as const;
-    }
 
     await tx.insert(invoiceLines).values(
       computation.lines.map((line) => ({
@@ -231,15 +247,7 @@ async function billSubscription(
   }
 
   for (;;) {
-    const [current] = await db
-      .select({ status: subscriptions.status, nextBillingDate: subscriptions.nextBillingDate })
-      .from(subscriptions)
-      .where(eq(subscriptions.id, subscription.id));
-    if (current?.status !== "active" || !current.nextBillingDate || current.nextBillingDate > today) return;
-
-    // Taken outside the transaction so one subscription's billing doesn't hold up everyone else's numbers.
-    const invoiceNumber = await nextNumber(db, "INV");
-    const outcome = await billNextPeriod(db, subscription.id, today, occurredAt, invoiceNumber);
+    const outcome = await billNextPeriod(db, subscription.id, today, occurredAt);
 
     if (outcome.kind === "stop") return;
     if (outcome.kind === "created") {
@@ -260,7 +268,7 @@ export async function billDueSubscription(db: Db, subscriptionId: string, today:
     .where(eq(subscriptions.id, subscriptionId));
   if (!subscription) return 0;
 
-  const result: BillingResult = { processed: 1, created: 0, billedPaise: 0, skipped: [], hasMore: false };
+  const result: BillingResult = { processed: 1, created: 0, billedPaise: 0, skipped: [], failed: [], hasMore: false };
   await billSubscription(db, subscription, today, occurredAt, result);
   return result.created;
 }
@@ -286,6 +294,7 @@ async function runBatch(db: Db, today: string, occurredAt: Date, limit: number, 
     created: 0,
     billedPaise: 0,
     skipped: [],
+    failed: [],
     hasMore: due.length > limit,
     cursor: batch.at(-1)?.id,
   };
@@ -295,7 +304,13 @@ async function runBatch(db: Db, today: string, occurredAt: Date, limit: number, 
     while (next < batch.length) {
       const subscription = batch[next];
       next += 1;
-      await billSubscription(db, subscription, today, occurredAt, result);
+      try {
+        await billSubscription(db, subscription, today, occurredAt, result);
+      } catch (error) {
+        // One bad subscription shouldn't stop the rest of the run.
+        console.error(`Billing failed for ${subscription.number}`, error);
+        result.failed.push({ subscriptionId: subscription.id, number: subscription.number, reason: "Unexpected error" });
+      }
     }
   };
   await Promise.all(Array.from({ length: Math.min(PARALLEL_SUBSCRIPTIONS, batch.length) }, worker));
@@ -316,7 +331,7 @@ export async function runBilling(
 
   if (options.limit !== undefined) return runBatch(db, today, now, options.limit, options.cursor);
 
-  const total: BillingResult = { processed: 0, created: 0, billedPaise: 0, skipped: [], hasMore: false };
+  const total: BillingResult = { processed: 0, created: 0, billedPaise: 0, skipped: [], failed: [], hasMore: false };
   let cursor = options.cursor;
   for (;;) {
     const batch = await runBatch(db, today, now, BATCH_SIZE, cursor);
@@ -324,6 +339,7 @@ export async function runBilling(
     total.created += batch.created;
     total.billedPaise += batch.billedPaise;
     total.skipped.push(...batch.skipped);
+    total.failed.push(...batch.failed);
     cursor = batch.cursor;
     if (!batch.hasMore) return total;
   }
