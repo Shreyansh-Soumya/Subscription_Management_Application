@@ -252,6 +252,19 @@ async function billSubscription(
   }
 }
 
+/** Bills whatever is due for one subscription. Returns how many invoices were created. */
+export async function billDueSubscription(db: Db, subscriptionId: string, today: string, occurredAt: Date): Promise<number> {
+  const [subscription] = await db
+    .select({ id: subscriptions.id, number: subscriptions.number, status: subscriptions.status })
+    .from(subscriptions)
+    .where(eq(subscriptions.id, subscriptionId));
+  if (!subscription) return 0;
+
+  const result: BillingResult = { processed: 1, created: 0, billedPaise: 0, skipped: [], hasMore: false };
+  await billSubscription(db, subscription, today, occurredAt, result);
+  return result.created;
+}
+
 async function runBatch(db: Db, today: string, occurredAt: Date, limit: number, cursor?: string): Promise<BillingResult> {
   const due = await db
     .select({ id: subscriptions.id, number: subscriptions.number, status: subscriptions.status })
