@@ -126,6 +126,12 @@ describe("transitionInvoice", () => {
     expect(await db.select().from(schema.events).where(eq(schema.events.entityId, invoice.id))).toHaveLength(1);
   });
 
+  it("can't be marked paid until the money is recorded", async () => {
+    const [invoice] = await db.insert(schema.invoices).values(newInvoice()).returning();
+    await transitionInvoice(db, { id: invoice.id, to: "confirmed" });
+    await expect(transitionInvoice(db, { id: invoice.id, to: "paid" })).rejects.toThrow("Record the full payment");
+  });
+
   it("rejects paying a draft", async () => {
     const [invoice] = await db.insert(schema.invoices).values(newInvoice()).returning();
     await expect(transitionInvoice(db, { id: invoice.id, to: "paid" })).rejects.toThrow(TransitionError);

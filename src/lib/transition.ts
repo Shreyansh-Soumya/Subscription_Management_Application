@@ -77,7 +77,7 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
 export async function transitionInvoice(db: Db, input: TransitionInput<InvoiceStatus>): Promise<void> {
   await db.transaction(async (tx) => {
     const [invoice] = await tx
-      .select({ status: invoices.status })
+      .select({ status: invoices.status, paidPaise: invoices.paidPaise, totalPaise: invoices.totalPaise })
       .from(invoices)
       .where(eq(invoices.id, input.id))
       .for("update");
@@ -85,6 +85,13 @@ export async function transitionInvoice(db: Db, input: TransitionInput<InvoiceSt
 
     const check = checkInvoiceTransition(invoice.status, input.to);
     if (!check.ok) throw new TransitionError(check.reason);
+
+    if (input.to === "cancelled" && invoice.paidPaise > 0) {
+      throw new TransitionError("This invoice has payments recorded, so it can't be cancelled.");
+    }
+    if (input.to === "paid" && invoice.paidPaise < invoice.totalPaise) {
+      throw new TransitionError("Record the full payment to mark this invoice as paid.");
+    }
 
     await tx.update(invoices).set({ status: input.to }).where(eq(invoices.id, input.id));
     await tx.insert(events).values({

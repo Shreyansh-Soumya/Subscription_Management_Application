@@ -44,6 +44,8 @@ Use these instead of writing your own version.
 | Create invoices for everything due | `runBilling(db, { limit, cursor })` | `src/lib/billing.ts` |
 | Move the time machine forward or back to today | `jumpToDate()`, `returnToRealDate()` | `src/lib/time-machine.ts` |
 | Renew a subscription | `renewSubscription()` | `src/lib/lifecycle.ts` |
+| Record money received | `recordPayment()` | `src/lib/payments.ts` |
+| Upload a bank statement and match it | `importBankStatement()`, `pendingBankSuggestions()`, `confirmBankMatch()`, `ignoreBankLine()` | `src/lib/bank-statements.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
 | Show money, split or take a percentage | `formatMoney()`, `allocate()`, `percentOf()` | `src/lib/money.ts` |
 
