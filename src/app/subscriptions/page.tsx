@@ -2,6 +2,7 @@ import Link from "next/link";
 import { and, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, plans, subscriptions } from "@/db/schema";
+import { requirePageRole } from "@/lib/permissions";
 
 export const instant = false;
 
@@ -39,6 +40,7 @@ export default async function SubscriptionsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await requirePageRole(["admin", "staff"]);
   const params = await searchParams;
 
   const search =
