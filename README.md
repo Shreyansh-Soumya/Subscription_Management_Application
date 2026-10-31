@@ -31,6 +31,8 @@ Use these instead of writing your own version.
 | Any invoice total, preview or tax | `computeInvoice()` | `src/lib/compute-invoice.ts` |
 | Change a status | `transitionSubscription()`, `transitionInvoice()` | `src/lib/transition.ts` |
 | Which statuses can come next, for buttons | `SUBSCRIPTION_NEXT`, `INVOICE_NEXT` | `src/lib/status.ts` |
+| Show what the next invoice will be | `previewNextInvoice(db, subscriptionId)` | `src/lib/billing.ts` |
+| Create invoices for everything due | `runBilling(db, { limit, cursor })` | `src/lib/billing.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
 | Show money, split or take a percentage | `formatMoney()`, `allocate()`, `percentOf()` | `src/lib/money.ts` |
 

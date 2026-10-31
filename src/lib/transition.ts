@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { events, invoices, plans, subscriptions } from "@/db/schema";
+import { billDueSubscription } from "./billing";
 import { appNow } from "./clock";
-import { toBusinessDate } from "./dates";
+import { firstBillingDateOnOrAfter, toBusinessDate } from "./dates";
 import {
   checkInvoiceTransition,
   checkSubscriptionTransition,
@@ -33,15 +34,32 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
 
     const now = await appNow(tx);
     const from = row.subscription.status;
+    const today = toBusinessDate(now);
     const check = checkSubscriptionTransition(from, input.to, {
       plan: row.plan,
-      today: toBusinessDate(now),
+      today,
       quoteValidUntil: row.subscription.quoteValidUntil,
       expiryDate: row.subscription.expiryDate,
     });
     if (!check.ok) throw new TransitionError(check.reason);
 
-    await tx.update(subscriptions).set({ status: input.to }).where(eq(subscriptions.id, input.id));
+    // Bill what is already due first, because resuming skips everything up to the resume date.
+    if (input.to === "paused") await billDueSubscription(tx, input.id, today, now);
+
+    const [{ nextBillingDate: currentBillingDate }] = await tx
+      .select({ nextBillingDate: subscriptions.nextBillingDate })
+      .from(subscriptions)
+      .where(eq(subscriptions.id, input.id));
+    let nextBillingDate = currentBillingDate;
+    if (from === "confirmed" && input.to === "active") {
+      nextBillingDate ??= row.subscription.startDate;
+    } else if (from === "paused" && input.to === "active") {
+      // Resuming continues from the next billing date, so the paused months aren't billed.
+      const resumeDate = firstBillingDateOnOrAfter(row.subscription.startDate, row.plan.frequency, today);
+      if (!nextBillingDate || nextBillingDate < resumeDate) nextBillingDate = resumeDate;
+    }
+
+    await tx.update(subscriptions).set({ status: input.to, nextBillingDate }).where(eq(subscriptions.id, input.id));
     await tx.insert(events).values({
       entityType: "subscription",
       entityId: input.id,
