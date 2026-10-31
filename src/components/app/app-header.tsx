@@ -16,7 +16,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { AppShellUser } from "./app-shell";
 
+const RECORD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function humanize(segment: string) {
+  if (RECORD_ID.test(segment)) return "Details";
   return segment
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))

@@ -102,7 +102,7 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
       items: [
         { title: "My Subscriptions", href: "/my-subscriptions", icon: Repeat },
         { title: "My Invoices", href: "/my-invoices", icon: ReceiptText },
-        { title: "Payments", href: "/payments", icon: CreditCard },
+        { title: "Payments", href: "/my-payments", icon: CreditCard },
       ],
     },
     {

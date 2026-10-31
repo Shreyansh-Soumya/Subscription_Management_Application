@@ -38,7 +38,7 @@ async function loadLines(db: Db, subscriptionId: string): Promise<InvoiceLineInp
     .select()
     .from(subscriptionLines)
     .where(eq(subscriptionLines.subscriptionId, subscriptionId))
-    .orderBy(asc(subscriptionLines.id));
+    .orderBy(asc(subscriptionLines.productId), asc(subscriptionLines.id)); // the portal's preview uses this order too
   if (lines.length === 0) return [];
 
   const taxes = await db
@@ -59,7 +59,7 @@ async function loadLines(db: Db, subscriptionId: string): Promise<InvoiceLineInp
 }
 
 /** The discount rules that could apply: attached whole-subscription ones, plus product ones for these lines. */
-async function loadDiscounts(db: Db, subscriptionId: string, lines: InvoiceLineInput[]): Promise<DiscountRule[]> {
+export async function loadDiscounts(db: Db, subscriptionId: string, lines: InvoiceLineInput[]): Promise<DiscountRule[]> {
   const productIds = [...new Set(lines.map((line) => line.productId))];
   const productLinks = productIds.length
     ? await db

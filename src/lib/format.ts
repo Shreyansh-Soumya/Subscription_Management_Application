@@ -9,3 +9,16 @@ export function formatDate(day: string): string {
 export function countOf(count: number, singular: string, pluralForm = `${singular}s`): string {
   return `${count.toLocaleString("en-IN")} ${count === 1 ? singular : pluralForm}`;
 }
+
+const FREQUENCY_WORDS: Record<string, string> = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
+
+/** "monthly" becomes "month", for phrases like "per month". */
+export function frequencyWord(frequency: string): string {
+  return FREQUENCY_WORDS[frequency] ?? frequency;
+}
+
+const PAYMENT_METHODS: Record<string, string> = { bank_transfer: "Bank transfer", upi: "UPI", cash: "Cash", card: "Card", cheque: "Cheque" };
+
+export function paymentMethodLabel(method: string): string {
+  return PAYMENT_METHODS[method] ?? method;
+}
