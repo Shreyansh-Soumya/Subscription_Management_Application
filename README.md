@@ -19,6 +19,7 @@ The first run takes a few minutes. It installs dependencies, sets up the databas
 | Add a dependency | `docker compose exec app npm install <package>`, then restart the app |
 | Open the database | `docker compose exec postgres psql -U brightloop` |
 | Stop everything | `docker compose down` |
+| Reset demo data between rehearsals | `docker compose exec app npm run db:reset` |
 | Wipe the database and dependencies, then start fresh | `docker compose down -v` |
 
 If port 3000 is taken, run `APP_PORT=3001 docker compose up` instead. On Windows, keep the repo inside WSL so code changes reload.
@@ -44,6 +45,8 @@ Use these instead of writing your own version.
 | Create invoices for everything due | `runBilling(db, { limit, cursor })` | `src/lib/billing.ts` |
 | Move the time machine forward or back to today | `jumpToDate()`, `returnToRealDate()` | `src/lib/time-machine.ts` |
 | Renew a subscription | `renewSubscription()` | `src/lib/lifecycle.ts` |
+| Monthly and yearly recurring revenue | `getRecurringRevenue()` | `src/lib/revenue.ts` |
+| Confirm all draft invoices | `confirmDraftInvoices()` | `src/lib/invoices.ts` |
 | Record money received | `recordPayment()` | `src/lib/payments.ts` |
 | Upload a bank statement and match it | `importBankStatement()`, `pendingBankSuggestions()`, `confirmBankMatch()`, `ignoreBankLine()` | `src/lib/bank-statements.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
