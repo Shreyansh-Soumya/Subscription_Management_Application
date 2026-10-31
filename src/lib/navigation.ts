@@ -18,6 +18,7 @@ import {
   Settings,
   UserPlus,
   Users,
+  Wallet,
   Wand2,
 } from "lucide-react";
 
@@ -72,7 +73,10 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     },
     {
       label: "Insights",
-      items: [{ title: "Reports", href: "/reports", icon: ChartColumn }],
+      items: [
+        { title: "Finance", href: "/finance", icon: Wallet },
+        { title: "Reports", href: "/reports", icon: ChartColumn },
+      ],
     },
     {
       label: "Workspace",
@@ -97,6 +101,7 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
         { title: "Quote templates", href: "/quote-templates", icon: FileText },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
+        { title: "Finance", href: "/finance", icon: Wallet },
         { title: "Billing run", href: "/billing", icon: Play },
         { title: "Bank matching", href: "/bank-matching", icon: Landmark },
       ],
