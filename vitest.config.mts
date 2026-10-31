@@ -5,5 +5,6 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
-  test: { include: ["src/**/*.test.ts"] },
+  // Each test starts its own in-memory Postgres, which can be slow on a busy machine or CI runner.
+  test: { include: ["src/**/*.test.ts"], testTimeout: 30_000, hookTimeout: 30_000 },
 });

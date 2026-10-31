@@ -9,6 +9,12 @@ const indiaDate = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+export function isRealDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const moment = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(moment.getTime()) && moment.toISOString().slice(0, 10) === value;
+}
+
 export function simulatedNow(realNow: Date, offsetMs: number): Date {
   return new Date(realNow.getTime() + offsetMs);
 }
@@ -29,6 +35,10 @@ export function addDays(day: string, count: number): string {
   const moment = parse(day);
   moment.setUTCDate(moment.getUTCDate() + count);
   return format(moment);
+}
+
+export function daysBetween(from: string, to: string): number {
+  return Math.round((parse(to).getTime() - parse(from).getTime()) / 86_400_000);
 }
 
 function addMonths(day: string, count: number): string {
@@ -54,4 +64,29 @@ export function addPeriods(anchor: string, frequency: BillingFrequency, count: n
     case "yearly":
       return addMonths(anchor, count * 12);
   }
+}
+
+/** The smallest number of whole billing periods after `anchor` that reaches `day`. */
+export function periodsUntil(anchor: string, frequency: BillingFrequency, day: string): number {
+  if (day <= anchor) return 0;
+  const start = parse(anchor);
+  const end = parse(day);
+  const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000);
+  const months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth();
+  const estimate = { daily: days, weekly: Math.floor(days / 7), monthly: months, yearly: Math.floor(months / 12) }[frequency];
+
+  // Start just below the estimate, then step up, so long-running plans take a couple of steps at most.
+  let count = Math.max(0, estimate - 1);
+  while (addPeriods(anchor, frequency, count) < day) count += 1;
+  return count;
+}
+
+/** The first billing date on or after `day`, for a subscription that started on `anchor`. */
+export function firstBillingDateOnOrAfter(anchor: string, frequency: BillingFrequency, day: string): string {
+  return addPeriods(anchor, frequency, periodsUntil(anchor, frequency, day));
+}
+
+/** The billing date straight after `current`, for a subscription that started on `anchor`. */
+export function nextBillingDateAfter(anchor: string, frequency: BillingFrequency, current: string): string {
+  return firstBillingDateOnOrAfter(anchor, frequency, addDays(current, 1));
 }

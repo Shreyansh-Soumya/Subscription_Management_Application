@@ -1,0 +1,1 @@
+ALTER TABLE "subscriptions" ADD COLUMN "term_start_date" date;

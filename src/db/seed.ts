@@ -9,9 +9,11 @@ import { computeInvoice, type DiscountRule } from "../lib/compute-invoice";
 import { addDays, addPeriods } from "../lib/dates";
 import { nextNumber } from "../lib/numbers";
 import * as schema from "./schema";
+import { seedPassword } from "./seed-password";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env first.");
+const loginPassword = seedPassword(url, process.env.SEED_PASSWORD);
 const client = postgres(url, { max: 1 });
 const db = drizzle({ client, schema });
 const {
@@ -20,7 +22,6 @@ const {
   subscriptionDiscounts, subscriptionLineTaxes, subscriptionLines, subscriptions, taxRules, user,
 } = schema;
 
-const DEMO_PASSWORD = "Brightloop@123";
 
 async function addLogin(name: string, email: string, role: "admin" | "staff" | "customer", password: string) {
   const id = randomUUID();
@@ -38,7 +39,7 @@ async function main() {
 
   await setClockOffset(db, 0);
   const today = await appToday(db);
-  const password = await hashPassword(DEMO_PASSWORD);
+  const password = await hashPassword(loginPassword);
 
   const adminId = await addLogin("Asha Admin", "admin@brightloop.test", "admin", password);
   await addLogin("Sam Staff", "staff@brightloop.test", "staff", password);
@@ -204,7 +205,7 @@ async function main() {
     }
   }
 
-  console.log(`Seeded ${specs.length} subscriptions. Log in as admin@, staff@ or customer@brightloop.test with ${DEMO_PASSWORD}`);
+  console.log(`Seeded ${specs.length} subscriptions. Log in as admin@, staff@ or customer@brightloop.test`);
 }
 
 main()

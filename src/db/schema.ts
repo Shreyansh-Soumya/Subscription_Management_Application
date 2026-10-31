@@ -33,6 +33,8 @@ export const discountKindEnum = pgEnum("discount_kind", ["percent", "fixed"]);
 export const discountScopeEnum = pgEnum("discount_scope", ["product", "subscription"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["bank_transfer", "upi", "card", "cash", "cheque"]);
 
+export const bankLineStatusEnum = pgEnum("bank_line_status", ["pending", "matched", "ignored"]);
+
 const id = () => uuid("id").primaryKey().defaultRandom();
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () =>
@@ -248,6 +250,7 @@ export const subscriptions = pgTable(
     status: subscriptionStatusEnum("status").notNull().default("draft"),
     startDate: date("start_date", { mode: "string" }).notNull(),
     expiryDate: date("expiry_date", { mode: "string" }),
+    termStartDate: date("term_start_date", { mode: "string" }), // set by renewal; null means the start date
     quoteValidUntil: date("quote_valid_until", { mode: "string" }),
     paymentTermsDays: integer("payment_terms_days").notNull().default(30),
     nextBillingDate: date("next_billing_date", { mode: "string" }),
@@ -382,6 +385,23 @@ export const payments = pgTable(
     index("payments_paid_on_idx").on(t.paidOn),
     check("payments_amount_positive", sql`${t.amountPaise} > 0`),
   ],
+);
+
+export const bankStatementLines = pgTable(
+  "bank_statement_lines",
+  {
+    id: id(),
+    fingerprint: text("fingerprint").notNull().unique(), // stops a re-uploaded statement importing twice
+    bookedOn: date("booked_on", { mode: "string" }).notNull(),
+    description: text("description").notNull(),
+    reference: text("reference").notNull().default(""),
+    amountPaise: integer("amount_paise").notNull(),
+    status: bankLineStatusEnum("status").notNull().default("pending"),
+    paymentId: uuid("payment_id").references(() => payments.id),
+    importedBy: text("imported_by").references(() => user.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("bank_statement_lines_status_idx").on(t.status, t.bookedOn)],
 );
 
 /* Shared infrastructure */

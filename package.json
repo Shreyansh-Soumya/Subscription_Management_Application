@@ -10,7 +10,9 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "vercel-build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then npm run db:migrate; fi && next build",
+    "db:reset": "tsx src/db/reset.ts && tsx src/db/seed.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.14",
@@ -35,5 +37,14 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true
   }
 }

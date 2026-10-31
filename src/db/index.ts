@@ -9,7 +9,8 @@ export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 function connect() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env and start the database.");
-  return drizzle({ client: postgres(url), schema });
+  // Prepared statements are off because hosted Neon connects through a connection pooler.
+  return drizzle({ client: postgres(url, { prepare: false }), schema });
 }
 
 // Reuse one connection pool across Next.js hot reloads in development.
