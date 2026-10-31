@@ -57,6 +57,8 @@ Use these instead of writing your own version.
 | Upload a bank statement and match it | `importBankStatement()`, `pendingBankSuggestions()`, `confirmBankMatch()`, `ignoreBankLine()` | `src/lib/bank-statements.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
 | Show money, split or take a percentage | `formatMoney()`, `allocate()`, `percentOf()` | `src/lib/money.ts` |
+| Set up products, plans, taxes and discounts (admin screens) | `/setup` for all at once, or `/products`, `/plans`, `/taxes`, `/discounts` | `src/app/(app)/` |
+| Price a line with a variant chosen | `variantUnitPricePaise()` | `src/lib/catalog-validation.ts` |
 
 The database client is `db` from `@/db`, and tables are in `@/db/schema`. Every shared function that takes `db` also accepts a transaction.
 

@@ -10,11 +10,13 @@ import {
   Package,
   Percent,
   Play,
+  Receipt,
   ReceiptText,
   Repeat,
   Settings,
   UserPlus,
   Users,
+  Wand2,
 } from "lucide-react";
 
 /**
@@ -46,8 +48,10 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     {
       label: "Catalogue",
       items: [
+        { title: "Guided setup", href: "/setup", icon: Wand2 },
         { title: "Products", href: "/products", icon: Package },
         { title: "Plans", href: "/plans", icon: Layers },
+        { title: "Taxes", href: "/taxes", icon: Receipt },
       ],
     },
     {

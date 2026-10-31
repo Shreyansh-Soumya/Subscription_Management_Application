@@ -8,6 +8,8 @@ const MANDATED_TITLES: Record<Role, string[]> = {
     "Dashboard",
     "Products",
     "Plans",
+    "Taxes",
+    "Guided setup",
     "Subscriptions",
     "Customers",
     "Invoices",
