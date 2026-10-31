@@ -31,6 +31,10 @@ export function addDays(day: string, count: number): string {
   return format(moment);
 }
 
+export function daysBetween(from: string, to: string): number {
+  return Math.round((parse(to).getTime() - parse(from).getTime()) / 86_400_000);
+}
+
 function addMonths(day: string, count: number): string {
   const anchor = parse(day);
   const firstOfTarget = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + count, 1));

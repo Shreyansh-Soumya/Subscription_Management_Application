@@ -23,9 +23,11 @@ The first run takes a few minutes. It installs dependencies, sets up the databas
 
 If port 3000 is taken, run `APP_PORT=3001 docker compose up` instead. On Windows, keep the repo inside WSL so code changes reload.
 
-Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. They work once login is built.
+Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. That password is public, so it only works on a local database. To seed a hosted database, set `SEED_PASSWORD` to a private password.
 
-To change the schema, ask Swayam first. Then edit `src/db/schema.ts` and run `docker compose exec app npm run db:generate` and `docker compose exec app npm run db:migrate`.
+The daily job at `/api/cron/daily` closes ended plans and bills what is due. It refuses every call until `CRON_SECRET` is set, so production needs that value in Vercel.
+
+To change the schema, ask Swayam first. Then edit `src/db/schema.ts` and run `docker compose exec app npm run db:generate` and `docker compose exec app npm run db:migrate`. Commit the new `drizzle/` files: production applies them automatically on deploy, so only add changes that old code can survive, such as new columns that are nullable or have defaults.
 
 ## Shared functions
 
@@ -34,13 +36,14 @@ Use these instead of writing your own version.
 | Need | Use | File |
 |---|---|---|
 | Current time or date in business logic | `appNow(db)`, `appToday(db)` | `src/lib/clock.ts` |
-| Move the time machine | `setClockOffset(db, ms)` | `src/lib/clock.ts` |
 | Date arithmetic | `addDays()`, `addPeriods()` | `src/lib/dates.ts` |
 | Any invoice total, preview or tax | `computeInvoice()` | `src/lib/compute-invoice.ts` |
 | Change a status | `transitionSubscription()`, `transitionInvoice()` | `src/lib/transition.ts` |
 | Which statuses can come next, for buttons | `SUBSCRIPTION_NEXT`, `INVOICE_NEXT` | `src/lib/status.ts` |
 | Show what the next invoice will be | `previewNextInvoice(db, subscriptionId)` | `src/lib/billing.ts` |
 | Create invoices for everything due | `runBilling(db, { limit, cursor })` | `src/lib/billing.ts` |
+| Move the time machine forward or back to today | `jumpToDate()`, `returnToRealDate()` | `src/lib/time-machine.ts` |
+| Renew a subscription | `renewSubscription()` | `src/lib/lifecycle.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
 | Show money, split or take a percentage | `formatMoney()`, `allocate()`, `percentOf()` | `src/lib/money.ts` |
 
