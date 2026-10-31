@@ -21,7 +21,6 @@ const MANDATED_TITLES: Record<Role, string[]> = {
     "Overview",
     "My Subscriptions",
     "My Invoices",
-    "Payments",
     "Account Settings",
   ],
 };
