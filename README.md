@@ -15,7 +15,7 @@ npm run dev
 
 Check your setup with `npm test`.
 
-Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. They work once login is built.
+Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. That password is public, so it only works on a local database. To seed a hosted database, set `SEED_PASSWORD` to a private password.
 
 The daily job at `/api/cron/daily` closes ended plans and bills what is due. It refuses every call until `CRON_SECRET` is set, so production needs that value in Vercel.
 
