@@ -6,11 +6,7 @@ import { AppHeader } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { PageContainer } from "./page-container";
 
-/**
- * Display-only identity props. Task 01 implements no authentication: feature
- * owners (or the future auth owner) pass presentation values from their own
- * layout. The shell renders fully without an authenticated user.
- */
+/** Display-only identity. `src/app/(app)/layout.tsx` passes in the signed-in user. */
 export type AppShellUser = {
   name: string;
   email: string;
@@ -22,18 +18,20 @@ export type AppShellProps = {
   role?: Role;
   /** Presentation only: shown in the sidebar footer and header avatar. */
   user?: AppShellUser | null;
+  /** Whether the sidebar starts expanded. The app layout reads this from its cookie. */
+  defaultOpen?: boolean;
   children: React.ReactNode;
 };
 
-export function AppShell({ role, user, children }: AppShellProps) {
+export function AppShell({ role, user, defaultOpen = true, children }: AppShellProps) {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar role={role} user={user} />
       <SidebarInset>
         <AppHeader user={user} />
-        <main className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col">
           <PageContainer>{children}</PageContainer>
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

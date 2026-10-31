@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePageRole } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -108,7 +109,10 @@ function MetricCard({
   );
 }
 
-export default function DashboardPage() {
+export const instant = false;
+
+export default async function DashboardPage() {
+  await requirePageRole(["admin", "staff"]);
   return (
     <div className="relative">
       <span className="stamp-badge absolute -top-1 right-0 hidden text-stamp-red lg:inline-flex">
@@ -133,7 +137,7 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      <section aria-label="Subscriptions" className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
+      <section aria-label="Subscriptions" className="mt-8 grid gap-6 [&>*]:min-w-0 lg:grid-cols-[1.6fr_1fr] lg:items-start">
         <div>
           <h2 className="headline text-[20px]">Subscriptions</h2>
           <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft">

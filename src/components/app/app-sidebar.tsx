@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,8 +15,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useSignOut } from "@/components/sign-out-button";
 import { navigationForRole, type NavGroup, type Role } from "@/lib/navigation";
 import type { AppShellUser } from "./app-shell";
 
@@ -49,6 +52,7 @@ function WorkspaceLogo() {
 }
 
 function NavGroups({ groups }: { groups: NavGroup[] }) {
+  const { setOpenMobile } = useSidebar();
   const pathname = usePathname() ?? "/";
 
   return (
@@ -67,7 +71,7 @@ function NavGroups({ groups }: { groups: NavGroup[] }) {
                     isActive={isActivePath(pathname, item.href)}
                     tooltip={item.title}
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href} onClick={() => setOpenMobile(false)}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -82,11 +86,30 @@ function NavGroups({ groups }: { groups: NavGroup[] }) {
   );
 }
 
+function SignOutItem() {
+  const { signOut, failed } = useSignOut();
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton onClick={signOut} tooltip="Sign out">
+          <LogOut />
+          <span>Sign out</span>
+        </SidebarMenuButton>
+        {failed && (
+          <p role="alert" className="px-2 pt-1 text-xs text-destructive group-data-[collapsible=icon]:hidden">
+            You&apos;re still signed in. Try again.
+          </p>
+        )}
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
 function SignedOutNav() {
   return (
     <SidebarGroup>
       <SidebarGroupContent>
-        <p className="px-2 py-4 font-mono text-[11px] uppercase tracking-[0.1em] leading-relaxed text-ink-soft">
+        <p className="px-2 py-4 group-data-[collapsible=icon]:hidden font-mono text-[11px] uppercase tracking-[0.1em] leading-relaxed text-ink-soft">
           Sign in to see your workspace.
         </p>
       </SidebarGroupContent>
@@ -104,7 +127,7 @@ function UserFooter({ user }: { user: AppShellUser }) {
     .toUpperCase();
 
   return (
-    <div className="flex items-center gap-2 border border-rule-strong bg-sheet p-2">
+    <div className="flex items-center gap-2 border border-rule-strong bg-sheet p-2 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
       <Avatar className="size-8">
         {user.image ? <AvatarImage src={user.image} alt={user.name} /> : null}
         <AvatarFallback className="bg-ink text-[11px] font-semibold text-sheet">
@@ -136,9 +159,12 @@ export function AppSidebar({ role, user }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         {user ? (
-          <UserFooter user={user} />
+          <>
+            <UserFooter user={user} />
+            <SignOutItem />
+          </>
         ) : (
-          <p className="px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-soft">
+          <p className="px-2 py-1.5 group-data-[collapsible=icon]:hidden font-mono text-[10px] uppercase tracking-[0.1em] text-ink-soft">
             Not signed in
           </p>
         )}

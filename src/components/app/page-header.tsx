@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
   title: string;
@@ -15,7 +16,7 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={className ?? "flex flex-wrap items-end justify-between gap-3"}>
+    <div className={cn("flex flex-wrap items-end justify-between gap-3", className)}>
       <div className="min-w-0">
         <h1 className="headline text-[26px] sm:text-[32px]">{title}</h1>
         {description ? (

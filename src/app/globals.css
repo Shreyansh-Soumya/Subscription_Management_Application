@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* The app is light-only, so dark: classes only apply inside an explicit .dark element. */
+@custom-variant dark (&:is(.dark *));
+
 /* Brightloop design system — Feedesk-derived (frozen baseline, plan §D). Light-only. */
 
 :root {
@@ -133,6 +136,12 @@
 
   html {
     scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   body {

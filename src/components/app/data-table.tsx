@@ -44,7 +44,7 @@ export function DataTable<T>({
   className,
 }: DataTableProps<T>) {
   return (
-    <div className={className ?? "overflow-x-auto border-[1.5px] border-ink bg-sheet"}>
+    <div className={cn("overflow-x-auto border-[1.5px] border-ink bg-sheet", className)}>
       <Table>
         <TableHeader>
           <TableRow className="border-b-[1.5px] border-ink hover:bg-transparent">

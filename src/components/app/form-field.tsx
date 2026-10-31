@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type FormFieldProps = {
   label: string;
@@ -22,7 +23,7 @@ export function FormField({
   className,
 }: FormFieldProps) {
   return (
-    <div className={className ?? "grid gap-1.5"}>
+    <div className={cn("grid gap-1.5", className)}>
       <Label
         htmlFor={htmlFor}
         className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft"

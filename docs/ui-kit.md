@@ -12,60 +12,22 @@ It renders fully without an authenticated user (signed-out placeholders).
 
 ## 1. Adopting the shell directly in a feature layout (recommended)
 
-Each feature owner renders `<AppShell>` in **their own** layout. Nothing outside
-their feature folder is touched.
+Put every signed-in page inside `src/app/(app)/`. The folder name doesn't appear in the URL, and its layout already renders `<AppShell>` with the signed-in user and the right navigation for their role, so don't add another shell or `PageContainer`.
 
 ```tsx
-// src/app/products/layout.tsx  (owned by the Products feature owner)
-import { AppShell } from "@/components/app/app-shell";
-
-export default function ProductsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <AppShell role="admin">{children}</AppShell>;
-}
-```
-
-Then a plain page renders inside the shell:
-
-```tsx
-// src/app/products/page.tsx
+// src/app/(app)/products/page.tsx
 import { PageHeader } from "@/components/app/page-header";
-import { PageContainer } from "@/components/app/page-container";
+import { requirePageRole } from "@/lib/permissions";
 
-export default function ProductsPage() {
-  return (
-    <PageContainer>
-      <PageHeader title="Products" description="Catalogue of coaching products." />
-      {/* …feature content… */}
-    </PageContainer>
-  );
+export const instant = false;
+
+export default async function ProductsPage() {
+  await requirePageRole(["admin"]); // every page checks its own role
+  return <PageHeader title="Products" description="Catalogue of products." />;
 }
 ```
 
-> The demo at `src/app/dashboard/` shows this exact pattern (signed-out, with
-> mock data). It is a demonstration route and can be deleted once real
-> dashboards exist.
-
-### Passing the signed-in user (when auth lands)
-
-`role` and `user` are **display-only props**. The auth owner (or feature owner)
-resolves them in *their* layout and passes values in — Task 01 resolves nothing:
-
-```tsx
-<AppShell
-  role="staff"
-  user={{ name: "Riya Sen", email: "staff@brightloop.test", image: null }}
->
-```
-
-- `role` missing → sidebar shows the workspace logo and a sign-in placeholder,
-  no nav groups.
-- `user` missing → footer shows “Not signed in”; header shows no avatar.
-
----
+> The demo at `src/app/(app)/dashboard/` uses mock data. Delete or replace it before the final demo.
 
 ## 2. Shared route-group layout (only when coordinated)
 

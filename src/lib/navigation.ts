@@ -83,7 +83,7 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
   customer: [
     {
       label: "Overview",
-      items: [{ title: "Overview", href: "/dashboard", icon: Home }],
+      items: [{ title: "Overview", href: "/portal", icon: Home }],
     },
     {
       label: "Billing",
