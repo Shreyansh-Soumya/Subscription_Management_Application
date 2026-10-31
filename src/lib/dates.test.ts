@@ -1,5 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { addDays, addPeriods, simulatedNow, toBusinessDate } from "./dates";
+import {
+  addDays,
+  addPeriods,
+  firstBillingDateOnOrAfter,
+  nextBillingDateAfter,
+  simulatedNow,
+  toBusinessDate,
+} from "./dates";
+
+describe("billing date helpers", () => {
+  it("keeps a billing date that falls exactly on the given day", () => {
+    expect(firstBillingDateOnOrAfter("2026-01-15", "monthly", "2026-03-15")).toBe("2026-03-15");
+  });
+
+  it("finds the next billing date in between", () => {
+    expect(firstBillingDateOnOrAfter("2026-01-15", "monthly", "2026-03-16")).toBe("2026-04-15");
+  });
+
+  it("returns the start date for a day before the subscription starts", () => {
+    expect(firstBillingDateOnOrAfter("2026-01-15", "yearly", "2025-06-01")).toBe("2026-01-15");
+  });
+
+  it("returns to the 31st after a short month", () => {
+    expect(nextBillingDateAfter("2026-01-31", "monthly", "2026-02-28")).toBe("2026-03-31");
+  });
+});
 
 describe("simulatedNow", () => {
   it("adds the time machine offset to the real time", () => {

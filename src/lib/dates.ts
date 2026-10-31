@@ -55,3 +55,15 @@ export function addPeriods(anchor: string, frequency: BillingFrequency, count: n
       return addMonths(anchor, count * 12);
   }
 }
+
+/** The first billing date on or after `day`, for a subscription that started on `anchor`. */
+export function firstBillingDateOnOrAfter(anchor: string, frequency: BillingFrequency, day: string): string {
+  let count = 0;
+  while (addPeriods(anchor, frequency, count) < day) count += 1;
+  return addPeriods(anchor, frequency, count);
+}
+
+/** The billing date straight after `current`, for a subscription that started on `anchor`. */
+export function nextBillingDateAfter(anchor: string, frequency: BillingFrequency, current: string): string {
+  return firstBillingDateOnOrAfter(anchor, frequency, addDays(current, 1));
+}

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { events, invoices, plans, subscriptions } from "@/db/schema";
 import { appNow } from "./clock";
-import { toBusinessDate } from "./dates";
+import { firstBillingDateOnOrAfter, toBusinessDate } from "./dates";
 import {
   checkInvoiceTransition,
   checkSubscriptionTransition,
@@ -41,7 +41,15 @@ export async function transitionSubscription(db: Db, input: TransitionInput<Subs
     });
     if (!check.ok) throw new TransitionError(check.reason);
 
-    await tx.update(subscriptions).set({ status: input.to }).where(eq(subscriptions.id, input.id));
+    let nextBillingDate = row.subscription.nextBillingDate;
+    if (from === "confirmed" && input.to === "active") {
+      nextBillingDate ??= row.subscription.startDate;
+    } else if (from === "paused" && input.to === "active") {
+      // Resuming continues from the next billing date, so the paused months aren't billed.
+      nextBillingDate = firstBillingDateOnOrAfter(row.subscription.startDate, row.plan.frequency, toBusinessDate(now));
+    }
+
+    await tx.update(subscriptions).set({ status: input.to, nextBillingDate }).where(eq(subscriptions.id, input.id));
     await tx.insert(events).values({
       entityType: "subscription",
       entityId: input.id,
