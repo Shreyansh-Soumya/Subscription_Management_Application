@@ -1,15 +1,19 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  CalendarClock,
   ChartColumn,
   CreditCard,
   Home,
+  Landmark,
   Layers,
   LayoutDashboard,
   Package,
   Percent,
+  Play,
   ReceiptText,
   Repeat,
   Settings,
+  UserPlus,
   Users,
 } from "lucide-react";
 
@@ -53,6 +57,8 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
         { title: "Customers", href: "/customers", icon: Users },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
+        { title: "Billing run", href: "/billing", icon: Play },
+        { title: "Bank matching", href: "/bank-matching", icon: Landmark },
         { title: "Discounts", href: "/discounts", icon: Percent },
       ],
     },
@@ -62,7 +68,11 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     },
     {
       label: "Workspace",
-      items: [{ title: "Settings", href: "/settings", icon: Settings }],
+      items: [
+        { title: "Time machine", href: "/admin/time-machine", icon: CalendarClock },
+        { title: "Add staff", href: "/admin/staff", icon: UserPlus },
+        { title: "Settings", href: "/settings", icon: Settings },
+      ],
     },
   ],
   staff: [
@@ -77,6 +87,8 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
         { title: "Subscriptions", href: "/subscriptions", icon: Repeat },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
+        { title: "Billing run", href: "/billing", icon: Play },
+        { title: "Bank matching", href: "/bank-matching", icon: Landmark },
       ],
     },
   ],

@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, isNotNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNotNull, lte, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import {
   discountProducts,
@@ -315,6 +315,21 @@ async function runBatch(db: Db, today: string, occurredAt: Date, limit: number, 
   };
   await Promise.all(Array.from({ length: Math.min(PARALLEL_SUBSCRIPTIONS, batch.length) }, worker));
   return result;
+}
+
+/** How many subscriptions the next billing run will go through, for its progress bar. */
+export async function countDueSubscriptions(db: Db, today: string): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(subscriptions)
+    .where(
+      and(
+        or(eq(subscriptions.status, "active"), eq(subscriptions.status, "paused")),
+        isNotNull(subscriptions.nextBillingDate),
+        lte(subscriptions.nextBillingDate, today),
+      ),
+    );
+  return row.total;
 }
 
 /**
