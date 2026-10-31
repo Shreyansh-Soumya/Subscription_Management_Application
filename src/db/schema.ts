@@ -248,6 +248,7 @@ export const subscriptions = pgTable(
     status: subscriptionStatusEnum("status").notNull().default("draft"),
     startDate: date("start_date", { mode: "string" }).notNull(),
     expiryDate: date("expiry_date", { mode: "string" }),
+    termStartDate: date("term_start_date", { mode: "string" }), // set by renewal; null means the start date
     quoteValidUntil: date("quote_valid_until", { mode: "string" }),
     paymentTermsDays: integer("payment_terms_days").notNull().default(30),
     nextBillingDate: date("next_billing_date", { mode: "string" }),
