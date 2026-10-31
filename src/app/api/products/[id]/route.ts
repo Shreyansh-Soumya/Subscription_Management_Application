@@ -1,78 +1,46 @@
-
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { db } from "@/db";
+import { failureResponse, invalidInput, isValidId, notFound, readJson } from "@/lib/api-helpers";
+import { productSchema } from "@/lib/catalog-validation";
 import { authorizeRoute } from "@/lib/permissions";
-import { updateProduct, deleteProduct } from "@/lib/product-service";
+import { deleteProduct, updateProduct } from "@/lib/product-service";
 
-const productSchema = z.object({
-  name: z.string().trim().min(1),
-  type: z.string().trim().min(1),
-  salesPricePaise: z.number().int().nonnegative(),
-  costPricePaise: z.number().int().nonnegative(),
-  notes: z.string().optional(),
-  isAddon: z.boolean().default(false),
-});
-
-type Context = {
-  params: Promise<{ id: string }>;
-};
+type Context = { params: Promise<{ id: string }> };
 
 export async function PUT(request: Request, { params }: Context) {
-  const access = await authorizeRoute(["admin", "staff"]);
+  const access = await authorizeRoute(["admin"]);
   if ("response" in access) return access.response;
 
+  const { id } = await params;
+  if (!isValidId(id)) return notFound("Product");
+
+  const parsed = productSchema.safeParse(await readJson(request));
+  if (!parsed.success) return invalidInput(parsed.error);
+
   try {
-    const { id } = await params;
-    const body: unknown = await request.json();
-    const result = productSchema.safeParse(body);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid product details", details: result.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const product = await updateProduct(id, result.data);
-
-    if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(product);
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to update product" },
-      { status: 500 },
-    );
+    const product = await updateProduct(db, id, parsed.data, access.user.id);
+    return product ? Response.json(product) : notFound("Product");
+  } catch (error) {
+    return failureResponse(error, {
+      fallback: "This product couldn't be saved.",
+      reference: "One of the chosen tax rules no longer exists.",
+    });
   }
 }
 
 export async function DELETE(_request: Request, { params }: Context) {
-  const access = await authorizeRoute(["admin", "staff"]);
+  const access = await authorizeRoute(["admin"]);
   if ("response" in access) return access.response;
 
+  const { id } = await params;
+  if (!isValidId(id)) return notFound("Product");
+
   try {
-    const { id } = await params;
-    const product = await deleteProduct(id);
-
-    if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({
-      message: "Product deleted successfully",
+    const product = await deleteProduct(db, id, access.user.id);
+    return product ? Response.json({ deleted: true }) : notFound("Product");
+  } catch (error) {
+    return failureResponse(error, {
+      fallback: "This product couldn't be deleted.",
+      reference: "This product is on a subscription, invoice or quotation template, so it can't be deleted.",
     });
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to delete product" },
-      { status: 500 },
-    );
   }
 }

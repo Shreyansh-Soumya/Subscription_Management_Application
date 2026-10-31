@@ -1,59 +1,44 @@
-
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { db } from "@/db";
+import { failureResponse, invalidInput, isValidId, notFound, readJson } from "@/lib/api-helpers";
+import { variantSchema } from "@/lib/catalog-validation";
 import { authorizeRoute } from "@/lib/permissions";
-import {
-  getProductVariants,
-  createProductVariant,
-} from "@/lib/product-service";
+import { createProductVariant, getProductVariants, productExists } from "@/lib/product-service";
 
-const variantSchema = z.object({
-  attribute: z.string().trim().min(1),
-  value: z.string().trim().min(1),
-  extraPricePaise: z.number().int().nonnegative(),
-});
-
-type Context = {
-  params: Promise<{ id: string }>;
-};
+type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
   const access = await authorizeRoute(["admin", "staff"]);
   if ("response" in access) return access.response;
 
+  const { id } = await params;
+  if (!isValidId(id)) return notFound("Product");
+
   try {
-    const { id } = await params;
-    return NextResponse.json(await getProductVariants(id));
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to fetch variants" },
-      { status: 500 },
-    );
+    if (!(await productExists(db, id))) return notFound("Product");
+    return Response.json(await getProductVariants(db, id));
+  } catch (error) {
+    return failureResponse(error, { fallback: "Variants couldn't be loaded." });
   }
 }
 
 export async function POST(request: Request, { params }: Context) {
-  const access = await authorizeRoute(["admin", "staff"]);
+  const access = await authorizeRoute(["admin"]);
   if ("response" in access) return access.response;
 
+  const { id } = await params;
+  if (!isValidId(id)) return notFound("Product");
+
+  const parsed = variantSchema.safeParse(await readJson(request));
+  if (!parsed.success) return invalidInput(parsed.error);
+
   try {
-    const { id } = await params;
-    const body: unknown = await request.json();
-    const result = variantSchema.safeParse(body);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid variant details", details: result.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const variant = await createProductVariant(id, result.data);
-    return NextResponse.json(variant, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to create variant. Check for duplicates or an invalid product." },
-      { status: 400 },
-    );
+    if (!(await productExists(db, id))) return notFound("Product");
+    return Response.json(await createProductVariant(db, id, parsed.data, access.user.id), { status: 201 });
+  } catch (error) {
+    return failureResponse(error, {
+      fallback: "This variant couldn't be saved.",
+      duplicate: "This product already has that variant.",
+      reference: "This product no longer exists.",
+    });
   }
 }

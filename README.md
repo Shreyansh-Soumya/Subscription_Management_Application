@@ -1,6 +1,6 @@
 # Brightloop
 
-One system to run plans, subscriptions and recurring billing. Team plan: https://brightloop-plan.pages.dev/
+One system to run plans, subscriptions and recurring billing.
 
 ## Get it running
 
@@ -47,6 +47,13 @@ Use these instead of writing your own version.
 | Renew a subscription | `renewSubscription()` | `src/lib/lifecycle.ts` |
 | Monthly and yearly recurring revenue | `getRecurringRevenue()` | `src/lib/revenue.ts` |
 | Confirm all draft invoices | `confirmDraftInvoices()` | `src/lib/invoices.ts` |
+| Add a signed-in page | Put it in `src/app/(app)/` so it gets the shell | `docs/ui-kit.md` |
+| Move the date, run billing, match bank payments (screens) | `/admin/time-machine`, `/billing`, `/bank-matching` | `src/app/(app)/` |
+| Set up products, plans, taxes and discounts (admin screens) | `/setup` for all at once, or `/products`, `/plans`, `/taxes`, `/discounts` | `src/app/(app)/` |
+| Price a line with a variant chosen | `variantUnitPricePaise()` | `src/lib/catalog-validation.ts` |
+| Protect a page | `await requirePageRole(["admin", "staff"])` | `src/lib/permissions.ts` |
+| Protect an API route | `authorizeRoute(["admin"])` | `src/lib/permissions.ts` |
+| Check a password in a form | `passwordProblem()` | `src/lib/password.ts` |
 | Record money received | `recordPayment()` | `src/lib/payments.ts` |
 | Upload a bank statement and match it | `importBankStatement()`, `pendingBankSuggestions()`, `confirmBankMatch()`, `ignoreBankLine()` | `src/lib/bank-statements.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
@@ -56,6 +63,7 @@ The database client is `db` from `@/db`, and tables are in `@/db/schema`. Every 
 
 ## Rules
 
+- Every page that isn't public must call `requirePageRole`, and every API route must call `authorizeRoute`. The login check in `src/proxy.ts` only stops logged-out visitors, not the wrong role.
 - Never use `new Date()` for business logic. Use `appNow(db)`, or the time machine breaks.
 - Store money as whole paise and percentages as basis points (1800 means 18%).
 - Business dates are India dates as `YYYY-MM-DD` strings.

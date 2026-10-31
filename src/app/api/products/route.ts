@@ -1,53 +1,36 @@
-
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { createProduct, getProducts } from "@/lib/product-service";
+import { db } from "@/db";
+import { failureResponse, invalidInput, readJson } from "@/lib/api-helpers";
+import { productSchema } from "@/lib/catalog-validation";
 import { authorizeRoute } from "@/lib/permissions";
+import { createProduct, listProducts, pageFrom } from "@/lib/product-service";
 
-const productSchema = z.object({
-  name: z.string().trim().min(1),
-  type: z.string().trim().min(1),
-  salesPricePaise: z.number().int().nonnegative(),
-  costPricePaise: z.number().int().nonnegative(),
-  notes: z.string().optional(),
-  isAddon: z.boolean().default(false),
-});
-
-export async function GET() {
+/** Staff can read the catalogue to prepare quotes. Cost price is admin-only. */
+export async function GET(request: Request) {
   const access = await authorizeRoute(["admin", "staff"]);
   if ("response" in access) return access.response;
 
   try {
-    return NextResponse.json(await getProducts());
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to fetch products" },
-      { status: 500 },
-    );
+    const result = await listProducts(db, { page: pageFrom(new URL(request.url).searchParams.get("page")) });
+    if (access.user.role === "admin") return Response.json(result);
+    return Response.json({ ...result, rows: result.rows.map((row) => ({ ...row, costPricePaise: undefined })) });
+  } catch (error) {
+    return failureResponse(error, { fallback: "Products couldn't be loaded." });
   }
 }
 
 export async function POST(request: Request) {
-  const access = await authorizeRoute(["admin", "staff"]);
+  const access = await authorizeRoute(["admin"]);
   if ("response" in access) return access.response;
 
+  const parsed = productSchema.safeParse(await readJson(request));
+  if (!parsed.success) return invalidInput(parsed.error);
+
   try {
-    const body: unknown = await request.json();
-    const result = productSchema.safeParse(body);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid product details", details: result.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const product = await createProduct(result.data);
-    return NextResponse.json(product, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { error: "Unable to create product" },
-      { status: 500 },
-    );
+    return Response.json(await createProduct(db, parsed.data, access.user.id), { status: 201 });
+  } catch (error) {
+    return failureResponse(error, {
+      fallback: "This product couldn't be saved.",
+      reference: "One of the chosen tax rules no longer exists.",
+    });
   }
 }
