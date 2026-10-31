@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
-import { confirmBankMatch, ignoreBankLine, importBankStatement, pendingBankSuggestions } from "./bank-statements";
+import { confirmBankMatch, ignoreBankLine, importBankStatement, openInvoicesForMatching, pendingBankSuggestions } from "./bank-statements";
 import { appToday } from "./clock";
 import { addDays } from "./dates";
 import { PaymentError, recordPayment } from "./payments";
@@ -181,5 +181,18 @@ describe("bank statements", () => {
     const [line] = await pendingBankSuggestions(db);
     await ignoreBankLine(db, { lineId: line.lineId });
     expect(await pendingBankSuggestions(db)).toEqual([]);
+  });
+});
+
+describe("openInvoicesForMatching", () => {
+  it("lists confirmed invoices with money still owed, and their balances", async () => {
+    const open = await addInvoice("confirmed", 1000, "INV-00042");
+    await pay(open.id, 400);
+    await addInvoice("draft", 1000);
+    const paid = await addInvoice("confirmed", 500);
+    await pay(paid.id, 500);
+    expect(await openInvoicesForMatching(db)).toEqual([
+      { id: open.id, number: "INV-00042", customerName: "Rao Traders", balancePaise: 600 },
+    ]);
   });
 });

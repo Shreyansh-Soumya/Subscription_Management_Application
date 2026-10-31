@@ -1,0 +1,24 @@
+const dateFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+/** Shows a business date ("2026-11-01") as "1 Nov 2026". */
+export function formatDate(day: string): string {
+  return dateFormat.format(new Date(`${day}T00:00:00Z`));
+}
+
+/** "1 invoice", "5,000 invoices". */
+export function countOf(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return `${count.toLocaleString("en-IN")} ${count === 1 ? singular : pluralForm}`;
+}
+
+const FREQUENCY_WORDS: Record<string, string> = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
+
+/** "monthly" becomes "month", for phrases like "per month". */
+export function frequencyWord(frequency: string): string {
+  return FREQUENCY_WORDS[frequency] ?? frequency;
+}
+
+const PAYMENT_METHODS: Record<string, string> = { bank_transfer: "Bank transfer", upi: "UPI", cash: "Cash", card: "Card", cheque: "Cheque" };
+
+export function paymentMethodLabel(method: string): string {
+  return PAYMENT_METHODS[method] ?? method;
+}

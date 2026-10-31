@@ -5,6 +5,7 @@ import {
   firstBillingDateOnOrAfter,
   nextBillingDateAfter,
   periodsUntil,
+  resumeBillingDate,
   simulatedNow,
   toBusinessDate,
 } from "./dates";
@@ -24,6 +25,20 @@ describe("billing date helpers", () => {
 
   it("returns to the 31st after a short month", () => {
     expect(nextBillingDateAfter("2026-01-31", "monthly", "2026-02-28")).toBe("2026-03-31");
+  });
+
+  it("resumes in the billing period containing the day", () => {
+    expect(resumeBillingDate("2026-01-15", "monthly", "2026-03-15", "2026-03-17")).toBe("2026-03-15");
+    expect(resumeBillingDate("2026-01-15", "monthly", "2026-02-15", "2026-06-20")).toBe("2026-06-15");
+    expect(resumeBillingDate("2026-01-15", "monthly", "2026-02-15", "2026-06-15")).toBe("2026-06-15");
+  });
+
+  it("never moves back over a period already billed on resume", () => {
+    expect(resumeBillingDate("2026-01-15", "monthly", "2026-04-15", "2026-03-17")).toBe("2026-04-15");
+  });
+
+  it("resumes from the start date before a subscription has started", () => {
+    expect(resumeBillingDate("2026-05-15", "monthly", null, "2026-03-17")).toBe("2026-05-15");
   });
 
   it("counts whole periods up to a date", () => {
