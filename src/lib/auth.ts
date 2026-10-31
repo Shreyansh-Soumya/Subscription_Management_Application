@@ -1,13 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { after } from "next/server";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/schema";
 import { ensureCustomerRecord } from "@/lib/accounts";
-import { sendEmail } from "@/lib/email";
-import { passwordProblem } from "@/lib/password";
-
-const PATHS_SETTING_A_PASSWORD = new Set(["/sign-up/email", "/reset-password", "/change-password"]);
+import { emailUnavailable, sendEmail } from "@/lib/email";
+import { authRequestProblem } from "@/lib/password";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -41,12 +40,18 @@ export const auth = betterAuth({
     },
   },
 
+  // Emails send after the response, so response time can't reveal whether an address has an account.
+  advanced: {
+    backgroundTasks: { handler: (task) => after(task) },
+  },
+
   // Better Auth only checks length, so the spec's other password rules are enforced here on the server.
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      if (!PATHS_SETTING_A_PASSWORD.has(ctx.path)) return;
-      const password = ctx.body?.password ?? ctx.body?.newPassword;
-      const problem = typeof password === "string" ? passwordProblem(password) : "Enter a password.";
+      if (ctx.path === "/request-password-reset" && emailUnavailable()) {
+        throw new APIError("SERVICE_UNAVAILABLE", { message: "Password reset email isn't available right now." });
+      }
+      const problem = authRequestProblem(ctx.path, ctx.body);
       if (problem) throw new APIError("BAD_REQUEST", { message: problem });
     }),
   },
@@ -55,12 +60,13 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (created) => {
+          // The login already exists by now, so a failure here mustn't fail signup. requirePageRole repairs it.
           await ensureCustomerRecord(db, {
             id: created.id,
             name: created.name,
             email: created.email,
             role: (created as { role?: string | null }).role,
-          });
+          }).catch((error) => console.error(`Customer record failed for user ${created.id}`, error));
         },
       },
     },

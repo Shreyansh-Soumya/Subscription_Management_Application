@@ -1,6 +1,8 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { db } from "@/db";
+import { ensureCustomerRecord } from "@/lib/accounts";
 import { auth } from "@/lib/auth";
 import { type AppRole, homeForRole } from "@/lib/roles";
 
@@ -14,37 +16,12 @@ export async function getCurrentUser() {
   return session?.user ?? null;
 }
 
-export async function requireRole(allowedRoles: AppRole[]) {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    throw new Error("UNAUTHORIZED");
-  }
-
-  if (!allowedRoles.includes(user.role as AppRole)) {
-    throw new Error("FORBIDDEN");
-  }
-
-  return user;
-}
-
-export async function requireAdmin() {
-  return requireRole(["admin"]);
-}
-
-export async function requireStaff() {
-  return requireRole(["admin", "staff"]);
-}
-
-export async function requireCustomer() {
-  return requireRole(["customer"]);
-}
-
 /** For pages. Sends logged-out visitors to login, and anyone without access to their own home. */
 export async function requirePageRole(allowedRoles: AppRole[]) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!allowedRoles.includes(user.role as AppRole)) redirect(homeForRole(user.role));
+  if (user.role === "customer") await ensureCustomerRecord(db, user);
   return user;
 }
 
