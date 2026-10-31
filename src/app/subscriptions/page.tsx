@@ -1,3 +1,5 @@
+import { redirect, notFound } from "next/navigation";
+import { getServerSession } from "@/lib/auth-guard";
 import Link from "next/link";
 import { and, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
@@ -39,6 +41,18 @@ export default async function SubscriptionsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  // Require an authenticated user.
+  const session = await getServerSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  // Only admins and staff can access internal subscriptions.
+  if (session.user.role !== "admin" && session.user.role !== "staff") {
+    notFound();
+  }
+
   const params = await searchParams;
 
   const search =
