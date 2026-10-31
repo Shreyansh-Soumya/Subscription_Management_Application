@@ -1,5 +1,8 @@
 import { cookies } from "next/headers";
 import { AppShell } from "@/components/app/app-shell";
+import { SimulatedDateBanner } from "@/components/app/simulated-date-banner";
+import { db } from "@/db";
+import { getClockState } from "@/lib/clock";
 import type { Role } from "@/lib/navigation";
 import { requirePageRole } from "@/lib/permissions";
 
@@ -13,6 +16,7 @@ export const instant = false;
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePageRole(["admin", "staff", "customer"]);
   const sidebarState = (await cookies()).get("sidebar_state")?.value;
+  const clock = await getClockState(db);
 
   return (
     <AppShell
@@ -20,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       user={{ name: user.name, email: user.email, image: user.image }}
       defaultOpen={sidebarState !== "false"}
     >
+      {clock.isSimulated && <SimulatedDateBanner today={clock.today} />}
       {children}
     </AppShell>
   );

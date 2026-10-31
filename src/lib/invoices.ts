@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import type { Db } from "@/db";
 import { invoices } from "@/db/schema";
 import { transitionInvoice } from "./transition";
@@ -11,6 +11,11 @@ export type ConfirmResult = {
   failed: { invoiceId: string; number: string }[];
   hasMore: boolean;
 };
+
+export async function countDraftInvoices(db: Db): Promise<number> {
+  const [row] = await db.select({ total: count() }).from(invoices).where(eq(invoices.status, "draft"));
+  return row.total;
+}
 
 /**
  * Confirms draft invoices in bulk, checking the same rules as confirming one at a time.

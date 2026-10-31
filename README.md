@@ -48,6 +48,7 @@ Use these instead of writing your own version.
 | Monthly and yearly recurring revenue | `getRecurringRevenue()` | `src/lib/revenue.ts` |
 | Confirm all draft invoices | `confirmDraftInvoices()` | `src/lib/invoices.ts` |
 | Add a signed-in page | Put it in `src/app/(app)/` so it gets the shell | `docs/ui-kit.md` |
+| Move the date, run billing, match bank payments (screens) | `/admin/time-machine`, `/billing`, `/bank-matching` | `src/app/(app)/` |
 | Protect a page | `await requirePageRole(["admin", "staff"])` | `src/lib/permissions.ts` |
 | Protect an API route | `authorizeRoute(["admin"])` | `src/lib/permissions.ts` |
 | Check a password in a form | `passwordProblem()` | `src/lib/password.ts` |

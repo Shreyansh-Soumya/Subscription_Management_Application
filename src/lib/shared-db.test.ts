@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
-import { appNow, appToday, setClockOffset } from "./clock";
+import { appNow, appToday, getClockState, setClockOffset } from "./clock";
 import { nextNumber } from "./numbers";
 import { transitionInvoice, transitionSubscription, TransitionError } from "./transition";
 
@@ -135,5 +135,16 @@ describe("transitionInvoice", () => {
   it("rejects paying a draft", async () => {
     const [invoice] = await db.insert(schema.invoices).values(newInvoice()).returning();
     await expect(transitionInvoice(db, { id: invoice.id, to: "paid" })).rejects.toThrow(TransitionError);
+  });
+});
+
+describe("getClockState", () => {
+  it("reports the real date when the clock hasn't moved", async () => {
+    expect(await getClockState(db)).toEqual({ isSimulated: false, today: await appToday(db) });
+  });
+
+  it("reports the simulated date after a jump", async () => {
+    await setClockOffset(db, 40 * 86_400_000);
+    expect(await getClockState(db)).toEqual({ isSimulated: true, today: await appToday(db) });
   });
 });

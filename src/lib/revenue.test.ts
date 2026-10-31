@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import * as schema from "@/db/schema";
 import { appToday } from "./clock";
 import { addDays } from "./dates";
-import { confirmDraftInvoices } from "./invoices";
+import { confirmDraftInvoices, countDraftInvoices } from "./invoices";
 import { getRecurringRevenue } from "./revenue";
 
 const { customers, invoices, plans, products, subscriptionLines, subscriptions } = schema;
@@ -123,5 +123,15 @@ describe("confirmDraftInvoices", () => {
     await confirmDraftInvoices(db);
     const [event] = await db.select().from(schema.events).where(eq(schema.events.entityId, invoice.id));
     expect(event).toMatchObject({ fromStatus: "draft", toStatus: "confirmed" });
+  });
+});
+
+describe("countDraftInvoices", () => {
+  it("counts only drafts", async () => {
+    await addSubscription("monthly", 100);
+    const draft = await addDraft("A", "2026-01-01");
+    await addDraft("B", "2026-02-01");
+    await db.update(invoices).set({ status: "cancelled" }).where(eq(invoices.id, draft.id));
+    expect(await countDraftInvoices(db)).toBe(1);
   });
 });
