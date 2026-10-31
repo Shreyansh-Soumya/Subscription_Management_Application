@@ -5,8 +5,8 @@ import { createProduct, getProducts } from "@/lib/product-service";
 import { authorizeRoute } from "@/lib/permissions";
 
 const productSchema = z.object({
-  name: z.string().trim().min(1, "Product name is required"),
-  type: z.string().trim().min(1, "Product type is required"),
+  name: z.string().trim().min(1),
+  type: z.string().trim().min(1),
   salesPricePaise: z.number().int().nonnegative(),
   costPricePaise: z.number().int().nonnegative(),
   notes: z.string().optional(),
@@ -15,14 +15,10 @@ const productSchema = z.object({
 
 export async function GET() {
   const access = await authorizeRoute(["admin", "staff"]);
-
-  if ("response" in access) {
-    return access.response;
-  }
+  if ("response" in access) return access.response;
 
   try {
-    const products = await getProducts();
-    return NextResponse.json(products);
+    return NextResponse.json(await getProducts());
   } catch {
     return NextResponse.json(
       { error: "Unable to fetch products" },
@@ -33,10 +29,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const access = await authorizeRoute(["admin", "staff"]);
-
-  if ("response" in access) {
-    return access.response;
-  }
+  if ("response" in access) return access.response;
 
   try {
     const body: unknown = await request.json();
@@ -44,16 +37,12 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        {
-          error: "Invalid product details",
-          details: result.error.flatten(),
-        },
+        { error: "Invalid product details", details: result.error.flatten() },
         { status: 400 },
       );
     }
 
     const product = await createProduct(result.data);
-
     return NextResponse.json(product, { status: 201 });
   } catch {
     return NextResponse.json(
