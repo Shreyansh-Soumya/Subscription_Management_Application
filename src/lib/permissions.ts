@@ -38,3 +38,9 @@ export async function authorizeRoute(allowedRoles: AppRole[]) {
   }
   return { user };
 }
+
+/** The signed-in user as a session object, or null. Pair it with a role check. */
+export async function getServerSession() {
+  const user = await getCurrentUser();
+  return user ? { user } : null;
+}

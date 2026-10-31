@@ -10,7 +10,9 @@ const MANDATED_TITLES: Record<Role, string[]> = {
     "Plans",
     "Taxes",
     "Guided setup",
+    "Today",
     "Subscriptions",
+    "Quote templates",
     "Customers",
     "Invoices",
     "Payments",
@@ -22,7 +24,7 @@ const MANDATED_TITLES: Record<Role, string[]> = {
     "Add staff",
     "Settings",
   ],
-  staff: ["Dashboard", "Customers", "Subscriptions", "Invoices", "Payments", "Billing run", "Bank matching"],
+  staff: ["Dashboard", "Customers", "Today", "Subscriptions", "Quote templates", "Invoices", "Payments", "Billing run", "Bank matching"],
   customer: [
     "Overview",
     "My Subscriptions",

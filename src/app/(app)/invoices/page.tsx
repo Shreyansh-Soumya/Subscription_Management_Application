@@ -56,7 +56,7 @@ function buildColumns(view: InvoiceView, today: string): TableColumn<InvoiceList
     {
       key: "number",
       header: "No.",
-      cell: (row) => <span className="num font-mono text-[13px] font-semibold">{row.number}</span>,
+      cell: (row) => <Link href={`/invoices/${row.invoiceId}`} className="num font-mono text-[13px] font-semibold text-stamp underline-offset-4 hover:underline">{row.number}</Link>,
     },
     {
       key: "customer",

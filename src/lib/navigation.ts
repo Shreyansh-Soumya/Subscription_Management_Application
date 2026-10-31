@@ -3,9 +3,11 @@ import {
   CalendarClock,
   ChartColumn,
   CreditCard,
+  FileText,
   Home,
   Landmark,
   Layers,
+  ListChecks,
   LayoutDashboard,
   Package,
   Percent,
@@ -57,7 +59,9 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     {
       label: "Operations",
       items: [
+        { title: "Today", href: "/today", icon: ListChecks },
         { title: "Subscriptions", href: "/subscriptions", icon: Repeat },
+        { title: "Quote templates", href: "/quote-templates", icon: FileText },
         { title: "Customers", href: "/customers", icon: Users },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
@@ -88,7 +92,9 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
       label: "Operations",
       items: [
         { title: "Customers", href: "/customers", icon: Users },
+        { title: "Today", href: "/today", icon: ListChecks },
         { title: "Subscriptions", href: "/subscriptions", icon: Repeat },
+        { title: "Quote templates", href: "/quote-templates", icon: FileText },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
         { title: "Billing run", href: "/billing", icon: Play },
