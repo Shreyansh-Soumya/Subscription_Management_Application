@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { StatusBadge } from "@/components/app/status-badge";
 import { db } from "@/db";
 import {
   customers,
@@ -28,15 +29,6 @@ const nextStatuses: Record<string, string[]> = {
   active: ["paused", "closed"],
   paused: ["active", "closed"],
   closed: [],
-};
-
-const statusStyles: Record<string, string> = {
-  draft: "bg-paper-deep text-ink",
-  quotation: "bg-purple-100 text-purple-700",
-  confirmed: "bg-blue-100 text-stamp",
-  active: "bg-green-100 text-green-700",
-  paused: "bg-amber-100 text-amber-700",
-  closed: "bg-red-100 text-red-700",
 };
 
 function money(paise: number) {
@@ -168,10 +160,8 @@ export default async function SubscriptionDetailPage({
             <p className="text-sm text-ink-soft">
               Brightloop / Subscriptions / {row.number}
             </p>
-            <h1 className="mt-2 text-3xl font-bold">{row.number}</h1>
-            <span className={`mt-3 inline-block px-3 py-1 text-xs font-semibold ${statusStyles[row.status]}`}>
-              {row.status.toUpperCase()}
-            </span>
+            <h1 className="headline text-[34px] sm:text-[44px]">{row.number}</h1>
+            <StatusBadge status={row.status} className="mt-3" />
           </div>
 
           <Link
@@ -302,7 +292,7 @@ export default async function SubscriptionDetailPage({
 
               <button
                 type="submit"
-                className="bg-ink px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+                className="bg-ink px-5 py-3 text-sm font-semibold text-sheet hover:bg-ink-soft"
               >
                 Update status
               </button>

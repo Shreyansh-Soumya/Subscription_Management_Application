@@ -15,9 +15,9 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <p role="alert" className="mt-4 text-gray-600">
+      <p role="alert" className="mt-4 text-ink-soft">
         This reset link isn&apos;t valid or has expired.{" "}
-        <Link href="/forgot-password" className="font-semibold text-blue-600 hover:underline">Request a new one</Link>
+        <Link href="/forgot-password" className="font-semibold text-stamp hover:underline">Request a new one</Link>
       </p>
     );
   }
@@ -48,7 +48,7 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-5">
       <div>
-        <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">New password</label>
+        <label htmlFor="password" className="mb-2 block text-sm font-medium text-ink">New password</label>
         <input
           id="password"
           type="password"
@@ -57,12 +57,12 @@ function ResetPasswordForm() {
           autoComplete="new-password"
           aria-describedby="password-rules"
           required
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600"
+          className="w-full border border-rule-strong px-4 py-3 outline-none focus:border-stamp"
         />
-        <p id="password-rules" className="mt-2 text-sm text-gray-500">{PASSWORD_RULES}</p>
+        <p id="password-rules" className="mt-2 text-sm text-ink-soft">{PASSWORD_RULES}</p>
       </div>
-      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+      {error && <p role="alert" className="bg-sheet border border-stamp-red p-3 text-sm text-stamp-red">{error}</p>}
+      <button type="submit" disabled={loading} className="w-full bg-ink py-3 font-semibold text-sheet hover:bg-ink-soft disabled:opacity-60">
         {loading ? "Saving..." : "Save new password"}
       </button>
     </form>
@@ -71,9 +71,9 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-900">Choose a new password</h1>
+    <main className="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+      <div className="w-full max-w-md bg-sheet p-8 ">
+        <h1 className="headline text-[34px] sm:text-[44px]">Choose a new password</h1>
         <Suspense fallback={null}>
           <ResetPasswordForm />
         </Suspense>

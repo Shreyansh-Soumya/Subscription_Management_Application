@@ -113,7 +113,7 @@ export default async function NewSubscriptionPage({ searchParams }: { searchPara
             Brightloop / Subscriptions / New
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+          <h1 className="headline text-[34px] sm:text-[44px]">
             New Subscription
           </h1>
 
