@@ -13,10 +13,11 @@ const MANDATED_TITLES: Record<Role, string[]> = {
     "Invoices",
     "Payments",
     "Discounts",
+    "Finance",
     "Reports",
     "Settings",
   ],
-  staff: ["Dashboard", "Customers", "Subscriptions", "Invoices", "Payments"],
+  staff: ["Dashboard", "Customers", "Subscriptions", "Invoices", "Payments", "Finance"],
   customer: [
     "Overview",
     "My Subscriptions",

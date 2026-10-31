@@ -11,6 +11,7 @@ import {
   Repeat,
   Settings,
   Users,
+  Wallet,
 } from "lucide-react";
 
 /**
@@ -58,7 +59,10 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
     },
     {
       label: "Insights",
-      items: [{ title: "Reports", href: "/reports", icon: ChartColumn }],
+      items: [
+        { title: "Finance", href: "/finance", icon: Wallet },
+        { title: "Reports", href: "/reports", icon: ChartColumn },
+      ],
     },
     {
       label: "Workspace",
@@ -77,6 +81,7 @@ export const NAVIGATION: Record<Role, NavGroup[]> = {
         { title: "Subscriptions", href: "/subscriptions", icon: Repeat },
         { title: "Invoices", href: "/invoices", icon: ReceiptText },
         { title: "Payments", href: "/payments", icon: CreditCard },
+        { title: "Finance", href: "/finance", icon: Wallet },
       ],
     },
   ],
