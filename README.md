@@ -1,6 +1,6 @@
 # Brightloop
 
-One system to run plans, subscriptions and recurring billing. Team plan: https://brightloop-plan.pages.dev/
+One system to run plans, subscriptions and recurring billing.
 
 ## Get it running
 
