@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: brightloop
+      POSTGRES_PASSWORD: brightloop
+      POSTGRES_DB: brightloop
+    ports:
+      - "127.0.0.1:55440:5432"
+    volumes:
+      - brightloop-postgres:/var/lib/postgresql/data
+
+volumes:
+  brightloop-postgres:
