@@ -49,8 +49,6 @@ Use these instead of writing your own version.
 | Confirm all draft invoices | `confirmDraftInvoices()` | `src/lib/invoices.ts` |
 | Add a signed-in page | Put it in `src/app/(app)/` so it gets the shell | `docs/ui-kit.md` |
 | Move the date, run billing, match bank payments (screens) | `/admin/time-machine`, `/billing`, `/bank-matching` | `src/app/(app)/` |
-| Set up products, plans, taxes and discounts (admin screens) | `/setup` for all at once, or `/products`, `/plans`, `/taxes`, `/discounts` | `src/app/(app)/` |
-| Price a line with a variant chosen | `variantUnitPricePaise()` | `src/lib/catalog-validation.ts` |
 | Protect a page | `await requirePageRole(["admin", "staff"])` | `src/lib/permissions.ts` |
 | Protect an API route | `authorizeRoute(["admin"])` | `src/lib/permissions.ts` |
 | Check a password in a form | `passwordProblem()` | `src/lib/password.ts` |
@@ -58,6 +56,8 @@ Use these instead of writing your own version.
 | Upload a bank statement and match it | `importBankStatement()`, `pendingBankSuggestions()`, `confirmBankMatch()`, `ignoreBankLine()` | `src/lib/bank-statements.ts` |
 | A new subscription or invoice number | `nextNumber(db, "SUB")` | `src/lib/numbers.ts` |
 | Show money, split or take a percentage | `formatMoney()`, `allocate()`, `percentOf()` | `src/lib/money.ts` |
+| Set up products, plans, taxes and discounts (admin screens) | `/setup` for all at once, or `/products`, `/plans`, `/taxes`, `/discounts` | `src/app/(app)/` |
+| Price a line with a variant chosen | `variantUnitPricePaise()` | `src/lib/catalog-validation.ts` |
 
 The database client is `db` from `@/db`, and tables are in `@/db/schema`. Every shared function that takes `db` also accepts a transaction.
 
