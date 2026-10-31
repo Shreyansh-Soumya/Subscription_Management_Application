@@ -9,6 +9,12 @@ const indiaDate = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+export function isRealDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const moment = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(moment.getTime()) && moment.toISOString().slice(0, 10) === value;
+}
+
 export function simulatedNow(realNow: Date, offsetMs: number): Date {
   return new Date(realNow.getTime() + offsetMs);
 }
