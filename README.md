@@ -4,20 +4,28 @@ One system to run plans, subscriptions and recurring billing. Team plan: https:/
 
 ## Get it running
 
+You only need Docker:
+
 ```bash
-npm install
-cp .env.example .env
-docker compose up -d
-npm run db:migrate
-npm run db:seed
-npm run dev
+docker compose up --build
 ```
 
-Check your setup with `npm test`.
+The first run takes a few minutes. It installs dependencies, sets up the database and adds demo data, then the app runs at http://localhost:3000. Saved code changes reload on their own. If you pull a new dependency, restart with `docker compose restart app`.
+
+| To do this | Run |
+|---|---|
+| Run the tests | `docker compose exec app npm test` |
+| Run any other project command | `docker compose exec app npm run <command>` |
+| Add a dependency | `docker compose exec app npm install <package>`, then restart the app |
+| Open the database | `docker compose exec postgres psql -U brightloop` |
+| Stop everything | `docker compose down` |
+| Wipe the database and dependencies, then start fresh | `docker compose down -v` |
+
+If port 3000 is taken, run `APP_PORT=3001 docker compose up` instead. On Windows, keep the repo inside WSL so code changes reload.
 
 Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. They work once login is built.
 
-To change the schema, ask Swayam first. Then edit `src/db/schema.ts` and run `npm run db:generate` and `npm run db:migrate`.
+To change the schema, ask Swayam first. Then edit `src/db/schema.ts` and run `docker compose exec app npm run db:generate` and `docker compose exec app npm run db:migrate`.
 
 ## Shared functions
 
