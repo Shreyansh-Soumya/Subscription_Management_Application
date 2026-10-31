@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { PASSWORD_RULES, passwordProblem } from "@/lib/password";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,6 +20,11 @@ export default function SignupPage() {
     e.preventDefault();
 
     setError("");
+    const problem = passwordProblem(password);
+    if (problem) {
+      setError(problem);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -95,13 +101,16 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="Choose a password"
               autoComplete="new-password"
-              minLength={8}
+              minLength={9}
+              aria-describedby="password-rules"
               required
               className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-600"
             />
           </div>
+
+          <p id="password-rules" className="-mt-3 text-sm text-gray-500">{PASSWORD_RULES}</p>
 
           {error && (
             <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
