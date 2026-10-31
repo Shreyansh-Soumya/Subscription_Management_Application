@@ -242,7 +242,12 @@ export default async function SubscriptionsPage({
                     className="transition hover:bg-slate-50"
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold">
-                      {subscription.number}
+                      <a
+                        href={`/subscriptions/${subscription.id}`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {subscription.number}
+                      </a>
                     </td>
 
                     <td className="px-5 py-4">
