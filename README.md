@@ -15,7 +15,7 @@ npm run dev
 
 Check your setup with `npm test`.
 
-Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. They work once login is built.
+Seed logins are `admin@brightloop.test`, `staff@brightloop.test` and `customer@brightloop.test`, all with the password `Brightloop@123`. That password is public, so it only works on a local database. To seed a hosted database, set `SEED_PASSWORD` to a private password.
 
 To change the schema, ask Swayam first. Then edit `src/db/schema.ts` and run `npm run db:generate` and `npm run db:migrate`.
 
