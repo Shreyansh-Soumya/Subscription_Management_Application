@@ -59,7 +59,7 @@ async function loadLines(db: Db, subscriptionId: string): Promise<InvoiceLineInp
 }
 
 /** The discount rules that could apply: attached whole-subscription ones, plus product ones for these lines. */
-async function loadDiscounts(db: Db, subscriptionId: string, lines: InvoiceLineInput[]): Promise<DiscountRule[]> {
+export async function loadDiscounts(db: Db, subscriptionId: string, lines: InvoiceLineInput[]): Promise<DiscountRule[]> {
   const productIds = [...new Set(lines.map((line) => line.productId))];
   const productLinks = productIds.length
     ? await db
